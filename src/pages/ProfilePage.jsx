@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useVehicle } from '../context/VehicleContext';
 import {
     User, Zap, Battery, MapPin, History, CreditCard, LogOut,
-    Settings, Star, BookmarkCheck, ChevronRight, Car
+    Settings, Star, BookmarkCheck, ChevronRight, Car, Plug, Gauge
 } from 'lucide-react';
 
 const SAVED = [
@@ -27,6 +28,7 @@ const PLANS = [
 
 const ProfilePage = () => {
     const { user, logout } = useAuth();
+    const { selectedVehicle } = useVehicle();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('saved');
 
@@ -64,13 +66,13 @@ const ProfilePage = () => {
                     {/* Vehicle info */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10 }}>
                         {[
-                            { icon: Car, label: 'Vehicle', value: 'Tata Nexon EV' },
-                            { icon: Battery, label: 'Battery', value: '40.5 kWh' },
+                            { icon: Car, label: 'Vehicle', value: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model}` : 'Not set' },
+                            { icon: Battery, label: 'Battery', value: selectedVehicle ? `${selectedVehicle.battery_kwh} kWh` : '—' },
                             { icon: MapPin, label: 'City', value: 'Hyderabad' },
                         ].map(({ icon: Icon, label, value }) => (
                             <div key={label} style={{ textAlign: 'center', background: 'var(--bg-primary)', borderRadius: 10, padding: '10px 8px' }}>
                                 <Icon size={16} color="var(--accent)" style={{ margin: '0 auto 4px' }} />
-                                <div style={{ fontSize: 13, fontWeight: 600 }}>{value}</div>
+                                <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
                                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</div>
                             </div>
                         ))}
@@ -82,6 +84,7 @@ const ProfilePage = () => {
                     {[
                         { key: 'saved', label: 'Saved', icon: BookmarkCheck },
                         { key: 'history', label: 'History', icon: History },
+                        { key: 'vehicle', label: 'My EV', icon: Car },
                         { key: 'plans', label: 'Plans', icon: CreditCard },
                     ].map(({ key, label, icon: Icon }) => (
                         <button key={key} onClick={() => setActiveTab(key)}
@@ -137,6 +140,47 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* My Vehicle tab */}
+                {activeTab === 'vehicle' && (
+                    <div>
+                        {selectedVehicle ? (
+                            <div>
+                                <div style={{ border: '1.5px solid var(--accent)', borderRadius: 16, overflow: 'hidden', marginBottom: 16 }}>
+                                    <div style={{ padding: '16px 20px', background: 'rgba(41,121,255,0.06)', borderBottom: '1px solid var(--bg-border)' }}>
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 2 }}>{selectedVehicle.brand}</div>
+                                        <div style={{ fontSize: 20, fontWeight: 800 }}>{selectedVehicle.model}</div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: 'var(--bg-border)' }}>
+                                        {[
+                                            { icon: Battery, label: 'Battery', val: `${selectedVehicle.battery_kwh} kWh`, c: 'var(--accent)' },
+                                            { icon: Gauge, label: 'Range', val: `${selectedVehicle.range_km} km`, c: '#10B981' },
+                                            { icon: Plug, label: 'Connector', val: selectedVehicle.connector_type, c: '#FF9800' },
+                                        ].map(({ icon: Icon, label, val, c }) => (
+                                            <div key={label} style={{ padding: '14px 8px', textAlign: 'center', background: 'var(--bg-card)' }}>
+                                                <Icon size={16} color={c} style={{ marginBottom: 4 }} />
+                                                <div style={{ fontSize: 13, fontWeight: 700 }}>{val}</div>
+                                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button onClick={() => navigate('/vehicle')} style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'rgba(41,121,255,0.08)', color: 'var(--accent)', border: '1px solid rgba(41,121,255,0.2)', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <Car size={16} /> Change Vehicle
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                                <Car size={48} style={{ opacity: 0.2, marginBottom: 12 }} />
+                                <h3 style={{ margin: '0 0 6px', fontSize: 15 }}>No Vehicle Selected</h3>
+                                <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-muted)' }}>Select your EV to get compatible station recommendations</p>
+                                <button onClick={() => navigate('/vehicle')} style={{ padding: '12px 24px', borderRadius: 12, background: 'var(--accent)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                                    Select My Vehicle
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 

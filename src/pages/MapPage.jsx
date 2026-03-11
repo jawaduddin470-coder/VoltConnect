@@ -6,8 +6,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
     Search, Filter, X, MapPin, Navigation, Map as MapIcon,
-    Crosshair, Zap, ChevronDown, ExternalLink, Wifi, WifiOff, AlertCircle, Loader2
+    Crosshair, Zap, ExternalLink, Wifi, WifiOff, AlertCircle, Loader2, Car
 } from 'lucide-react';
+import { useVehicle } from '../context/VehicleContext';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const HYDERABAD = [17.3850, 78.4867];
@@ -121,6 +122,7 @@ const StatusBadge = ({ status }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 const MapPage = () => {
     const navigate = useNavigate();
+    const { selectedVehicle } = useVehicle();
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -130,6 +132,7 @@ const MapPage = () => {
     const [placeCard, setPlaceCard] = useState(null);
     const [showFilters, setShowFilters] = useState(false);
     const [flyTarget, setFlyTarget] = useState(null);
+    const [vehicleFilter, setVehicleFilter] = useState(false);
     const markerRefs = useRef({});
 
     // ─ Fetch from API with cache ─
@@ -175,14 +178,12 @@ const MapPage = () => {
 
     // ─ Filter logic ─
     const filtered = useMemo(() => {
-        if (!search.trim()) return stations;
-        const q = search.toLowerCase();
-        return stations.filter(s =>
-            s.name.toLowerCase().includes(q) ||
-            s.area.toLowerCase().includes(q) ||
-            s.address.toLowerCase().includes(q)
-        );
-    }, [stations, search]);
+        return stations.filter(s => {
+            const matchSearch = !search.trim() || s.name.toLowerCase().includes(search.toLowerCase()) || s.area.toLowerCase().includes(search.toLowerCase()) || s.address.toLowerCase().includes(search.toLowerCase());
+            const matchVehicle = !vehicleFilter || !selectedVehicle || s.connectors.some(c => c.toLowerCase().includes(selectedVehicle.connector_type.toLowerCase()) || selectedVehicle.connector_type.toLowerCase().includes(c.toLowerCase()));
+            return matchSearch && matchVehicle;
+        });
+    }, [stations, search, vehicleFilter, selectedVehicle]);
 
     // ─ Marker click → open place card ─
     const handleMarkerClick = useCallback((station) => {
@@ -320,12 +321,30 @@ const MapPage = () => {
                         </button>
                     </div>
 
-                    {/* Station count chip */}
+                    {/* Station count + vehicle filter chips */}
                     {!loading && (
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                            <span style={{ background: 'rgba(41,121,255,0.12)', color: '#2979FF', padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, backdropFilter: 'blur(4px)' }}>
-                                ⚡ {filtered.length} stations found
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ background: 'rgba(41,121,255,0.12)', color: '#2979FF', padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                                ⚡ {filtered.length} station{filtered.length !== 1 ? 's' : ''}
                             </span>
+                            {selectedVehicle && (
+                                <button
+                                    onClick={() => setVehicleFilter(v => !v)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 5,
+                                        padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                                        cursor: 'pointer', backdropFilter: 'blur(4px)',
+                                        border: vehicleFilter ? '1.5px solid #10B981' : '1.5px solid rgba(16,185,129,0.35)',
+                                        background: vehicleFilter ? 'rgba(16,185,129,0.18)' : 'rgba(16,185,129,0.08)',
+                                        color: vehicleFilter ? '#059669' : '#10B981',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                    }}
+                                >
+                                    <Car size={12} />
+                                    {vehicleFilter ? `${selectedVehicle.connector_type} Only ✓` : `Filter: ${selectedVehicle.connector_type}`}
+                                    {vehicleFilter && <X size={11} />}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

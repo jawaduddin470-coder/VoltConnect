@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { VehicleProvider } from './context/VehicleContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import SideNav from './components/SideNav';
@@ -31,6 +32,7 @@ import TripsPage from './pages/TripsPage';
 import CalculatorPage from './pages/CalculatorPage';
 import CommunityPage from './pages/CommunityPage';
 import ProfilePage from './pages/ProfilePage';
+import VehiclePage from './pages/VehiclePage';
 
 const PUBLIC_PATHS = ['/', '/login', '/signup', '/role-select', '/pricing-driver', '/pricing-operator'];
 
@@ -71,6 +73,7 @@ const AppLayout = () => {
           <Route path="/calculator" element={<ProtectedRoute><CalculatorPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/vehicle" element={<ProtectedRoute><VehiclePage /></ProtectedRoute>} />
 
           {/* Protected Operator Hub */}
           <Route path="/operator/dashboard" element={<ProtectedRoute><OperatorDashboardPage /></ProtectedRoute>} />
@@ -96,9 +99,11 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <AppLayout />
-        </BrowserRouter>
+        <VehicleProvider>
+          <BrowserRouter>
+            <AppLayout />
+          </BrowserRouter>
+        </VehicleProvider>
       </AuthProvider>
     </ThemeProvider>
   );

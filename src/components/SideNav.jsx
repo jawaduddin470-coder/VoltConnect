@@ -3,13 +3,14 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     Map, Route, Clock, Users, UserCircle2, Zap, Calculator,
-    LogOut
+    LogOut, Car
 } from 'lucide-react';
 
 const navItems = [
     { to: '/map', icon: Map, label: 'Map' },
     { to: '/trips', icon: Route, label: 'Trips' },
     { to: '/queue', icon: Clock, label: 'Queue' },
+    { to: '/vehicle', icon: Car, label: 'My EV' },
     { to: '/calculator', icon: Calculator, label: 'Calc' },
     { to: '/community', icon: Users, label: 'Community' },
     { to: '/profile', icon: UserCircle2, label: 'Profile' },
