@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCAzSbzrxt-kA7YSWLg-qaaT8v8dix_NKE",
-    authDomain: "voltconnect-30c9b.firebaseapp.com",
-    projectId: "voltconnect-30c9b",
-    storageBucket: "voltconnect-30c9b.firebasestorage.app",
-    messagingSenderId: "519731202341",
-    appId: "1:519731202341:web:b8df28c1231eed64c7b2cc",
-    measurementId: "G-D6TJ7N9W3V"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
