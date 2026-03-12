@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Zap, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const SignupPage = () => {
-    const { signup, loginWithGoogle, userRole } = useAuth();
+    const { user, signup, loginWithGoogle, userRole, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -12,6 +12,13 @@ const SignupPage = () => {
     const [showPass, setShowPass] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Auto-navigate if already logged in (essential for redirect signup flow)
+    React.useEffect(() => {
+        if (!authLoading && user) {
+            navigate(userRole === 'driver' ? '/map' : '/operator/dashboard', { replace: true });
+        }
+    }, [user, authLoading, userRole, navigate]);
 
     const handleSignup = async (e) => {
         e.preventDefault();
