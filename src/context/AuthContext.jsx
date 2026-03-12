@@ -3,6 +3,8 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signOut,
     onAuthStateChanged,
 } from 'firebase/auth';
@@ -54,6 +56,19 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        // Handle redirect result (for Google Sign-in)
+        const checkRedirect = async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    console.log("AuthContext: Successfully logged in via redirect", result.user.email);
+                }
+            } catch (error) {
+                console.error("AuthContext: Redirect result error", error);
+            }
+        };
+        checkRedirect();
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 try {
@@ -89,7 +104,16 @@ export const AuthProvider = ({ children }) => {
 
     const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
     const signup = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-    const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+    
+    const loginWithGoogle = async () => {
+        try {
+            await signInWithRedirect(auth, googleProvider);
+        } catch (error) {
+            console.error("AuthContext: Redirect start error", error);
+            throw error;
+        }
+    };
+
     const logout = () => signOut(auth);
 
     const value = {
