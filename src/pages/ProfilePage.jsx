@@ -20,14 +20,21 @@ const HISTORY = [
     { station: 'Ather Grid', area: 'Hitech City', date: 'Feb 20, 2026', energy: '12.0 kWh', cost: '₹144' },
 ];
 
-const PLANS = [
-    { name: 'Free', price: '₹0/mo', features: ['5 queue joins/mo', 'Basic map', 'Community access'], current: true, color: '#8B94B2' },
-    { name: 'Pro', price: '₹199/mo', features: ['Unlimited queues', 'Trip planner', 'Priority support', 'Ad-free'], current: false, color: '#2979FF' },
-    { name: 'Elite', price: '₹499/mo', features: ['All Pro features', 'Real-time alerts', 'Dedicated support', 'VoltBadge'], current: false, color: '#7C4DFF' },
+const DRIVER_PLANS = [
+    { id: 'free', name: 'Driver Free', price: '₹0/mo', features: ['Basic map', 'Community access'], color: '#8B94B2' },
+    { id: 'silver', name: 'Driver Silver', price: '₹399/mo', features: ['Join queue', 'Trip planner', 'Price alerts'], color: '#00B4D8' },
+    { id: 'gold', name: 'Driver Gold', price: '₹699/mo', features: ['Priority queue', 'Advanced routing', 'Multi-vehicle'], color: '#FF9800' },
+    { id: 'platinum', name: 'Driver Platinum', price: '₹1199/mo', features: ['Unlimited priority', 'AI planner', 'Insights'], color: 'var(--accent)' },
+];
+
+const OPERATOR_PLANS = [
+    { id: 'free', name: 'Operator Basic', price: '₹0/mo', features: ['List station', 'Basic visibility'], color: '#10B981' },
+    { id: 'growth', name: 'Operator Growth', price: '₹3000/mo', features: ['Priority listing', 'Booking system', 'Analytics'], color: '#2979FF' },
+    { id: 'pro', name: 'Operator Pro', price: '₹7000/mo', features: ['Featured placement', 'Unlimited chargers', 'Promotions'], color: '#F59E0B' },
 ];
 
 const ProfilePage = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, userRole, userPlan } = useAuth();
     const { selectedVehicle } = useVehicle();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('saved');
@@ -37,8 +44,15 @@ const ProfilePage = () => {
         navigate('/login');
     };
 
+    const handleUpgradeClick = () => {
+        if (userRole === 'operator') navigate('/pricing-operator');
+        else navigate('/pricing-driver');
+    };
+
     const displayName = user?.displayName || user?.email?.split('@')[0] || 'EV Driver';
     const email = user?.email || 'user@voltconnect.in';
+
+    const activePlans = userRole === 'operator' ? OPERATOR_PLANS : DRIVER_PLANS;
 
     return (
         <div className="page-container" style={{ maxWidth: 800 }}>
@@ -187,31 +201,36 @@ const ProfilePage = () => {
                 {/* Plans */}
                 {activeTab === 'plans' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {PLANS.map(plan => (
-                            <div key={plan.name} className="vc-card" style={{ padding: 20, borderColor: plan.current ? `${plan.color}50` : undefined, background: plan.current ? `${plan.color}08` : undefined }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-                                    <div>
-                                        <div style={{ fontFamily: 'Rajdhani', fontWeight: 700, fontSize: 20, color: plan.color }}>{plan.name}</div>
-                                        <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Rajdhani' }}>{plan.price}</div>
-                                    </div>
-                                    {plan.current ? (
-                                        <span style={{ background: `${plan.color}20`, color: plan.color, border: `1px solid ${plan.color}40`, borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 }}>Current</span>
-                                    ) : (
-                                        <button className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, background: plan.color }}>Upgrade</button>
-                                    )}
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    {plan.features.map(f => (
-                                        <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: `${plan.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <span style={{ fontSize: 9, color: plan.color }}>✓</span>
-                                            </div>
-                                            {f}
+                        {activePlans.map(plan => {
+                            const isCurrent = userPlan === plan.id;
+                            return (
+                                <div key={plan.id} className="vc-card" style={{ padding: 20, borderColor: isCurrent ? `${plan.color}50` : undefined, background: isCurrent ? `${plan.color}08` : undefined }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                                        <div>
+                                            <div style={{ fontFamily: 'Rajdhani', fontWeight: 700, fontSize: 20, color: plan.color }}>{plan.name}</div>
+                                            <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Rajdhani' }}>{plan.price}</div>
                                         </div>
-                                    ))}
+                                        {isCurrent ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                                                <span style={{ background: `${plan.color}20`, color: plan.color, border: `1px solid ${plan.color}40`, borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 }}>Current Plan</span>
+                                            </div>
+                                        ) : (
+                                            <button onClick={handleUpgradeClick} className="btn-primary" style={{ padding: '8px 16px', fontSize: 13, background: plan.color, border: 'none', color: '#fff', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Switch Plan</button>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                        {plan.features.map(f => (
+                                            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                <div style={{ width: 16, height: 16, borderRadius: '50%', background: `${plan.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <span style={{ fontSize: 9, color: plan.color }}>✓</span>
+                                                </div>
+                                                {f}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
 

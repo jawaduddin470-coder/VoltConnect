@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Check, ArrowRight, Zap, Star, Rocket, Gift } from 'lucide-react';
+import { useRazorpay } from '../hooks/useRazorpay';
+import { Check, ArrowRight, Zap, Star, Rocket, Gift, Loader2 } from 'lucide-react';
 
 const PLANS = [
     {
@@ -60,11 +61,26 @@ const PLANS = [
 
 const OperatorPricingPage = () => {
     const navigate = useNavigate();
-    const { setUserPlan } = useAuth();
+    const { user, setUserPlan, userPlan } = useAuth();
+    const { initializePayment, loading } = useRazorpay();
 
-    const handleSelectPlan = (plan) => {
-        setUserPlan(plan.id);
-        navigate('/signup');
+    const handleSelectPlan = async (plan) => {
+        if (!user) {
+            navigate('/signup', { state: { returnTo: '/pricing-operator' } });
+            return;
+        }
+
+        if (plan.price === '0') {
+            setUserPlan(plan.id);
+            navigate('/operator/dashboard');
+            return;
+        }
+
+        await initializePayment({
+            amount: plan.price.replace(/,/g, ''),
+            planId: plan.id,
+            planName: `Operator ${plan.name}`
+        });
     };
 
     return (
@@ -159,30 +175,30 @@ const OperatorPricingPage = () => {
                                 {/* CTA */}
                                 <button
                                     onClick={() => handleSelectPlan(plan)}
+                                    disabled={userPlan === plan.id || loading}
                                     style={{
                                         width: '100%',
                                         padding: '13px',
                                         borderRadius: 12,
                                         fontSize: 15,
                                         fontWeight: 700,
-                                        cursor: 'pointer',
+                                        cursor: userPlan === plan.id ? 'default' : loading ? 'wait' : 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         gap: 8,
                                         transition: 'all 0.2s',
-                                        background: plan.popular
+                                        background: userPlan === plan.id ? 'var(--bg-border)' : plan.popular
                                             ? `linear-gradient(90deg, ${plan.color}, #00B0FF)`
-                                            : plan.price === '0'
-                                            ? plan.bgColor
                                             : plan.bgColor,
-                                        color: plan.popular ? '#fff' : plan.color,
+                                        color: userPlan === plan.id ? 'var(--text-muted)' : plan.popular ? '#fff' : plan.color,
                                         border: plan.popular ? 'none' : `1.5px solid ${plan.color}50`,
-                                        boxShadow: plan.popular ? `0 8px 20px ${plan.color}40` : 'none',
+                                        boxShadow: plan.popular && userPlan !== plan.id ? `0 8px 20px ${plan.color}40` : 'none',
+                                        opacity: userPlan === plan.id ? 0.6 : 1,
                                     }}
                                 >
-                                    {plan.price === '0' ? 'Get Started Free' : 'Start Operator Account'}
-                                    <ArrowRight size={16} />
+                                    {userPlan === plan.id ? 'Current Plan' : loading ? <><Loader2 className="spinner" size={16} /> Processing...</> : plan.price === '0' ? 'Get Started Free' : 'Start Operator Account'}
+                                    {userPlan !== plan.id && !loading && <ArrowRight size={16} />}
                                 </button>
                             </div>
                         );
