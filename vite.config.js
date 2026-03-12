@@ -35,7 +35,27 @@ export default defineConfig({
             purpose: 'any maskable'
           }
         ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/analytics'],
+          'vendor-ui': ['lucide-react'],
+          'vendor-maps': ['leaflet', 'react-leaflet'],
+          'vendor-payment': ['razorpay']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 })

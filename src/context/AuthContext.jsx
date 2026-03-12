@@ -70,34 +70,38 @@ export const AuthProvider = ({ children }) => {
         checkRedirect();
 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            // Set user immediately and stop blocking the UI
+            setUser(currentUser);
+            setLoading(false);
+
             if (currentUser) {
+                // Fetch profile data in the background
                 try {
                     const userRef = doc(db, 'users', currentUser.uid);
                     const docSnap = await getDoc(userRef);
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        if (data.role) {
+                        if (data.role && data.role !== userRole) {
                             setUserRoleState(data.role);
                             localStorage.setItem('vc_role', data.role);
                         }
-                        if (data.subscription_plan) {
+                        if (data.subscription_plan && data.subscription_plan !== userPlan) {
                             setUserPlanState(data.subscription_plan);
                             localStorage.setItem('vc_plan', data.subscription_plan);
                         }
                     } else {
+                        // Create default profile if missing
                         await setDoc(userRef, {
                             email: currentUser.email,
                             role: localStorage.getItem('vc_role') || 'driver',
                             subscription_plan: localStorage.getItem('vc_plan') || 'free',
                             created_at: new Date().toISOString()
-                        });
+                        }, { merge: true });
                     }
                 } catch (e) {
-                    console.error("AuthContext: Firestore error", e);
+                    console.warn("AuthContext: Background profile fetch error", e);
                 }
             }
-            setUser(currentUser);
-            setLoading(false);
         });
         return unsubscribe;
     }, []);
