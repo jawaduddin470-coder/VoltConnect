@@ -12,30 +12,46 @@ import PageSkeleton from './components/PageSkeleton';
 import AIChatAssistant from './components/AIChatAssistant';
 import { useAuth } from './hooks/useAuth';
 
+// ── Helper: Retry Lazy Import ──────────────────────────────────────────────────
+// Catches chunk load errors (often caused by Vercel deployments changing file hashes
+// while an old PWA service worker is active) and forces a hard reload.
+const retryLazy = (componentImport) => {
+  return lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.warn("Chunk loading failed, forcing full reload to fetch new assets...", error);
+      // Wait a moment so we don't spam reloads if it's completely offline
+      setTimeout(() => window.location.reload(true), 1500);
+      return { default: () => <PageSkeleton /> };
+    }
+  });
+};
+
 // ── Lazy-loaded pages (greatly reduces initial bundle size) ─────────────────
-const LandingPage        = lazy(() => import('./pages/LandingPage'));
-const LoginPage          = lazy(() => import('./pages/LoginPage'));
-const SignupPage         = lazy(() => import('./pages/SignupPage'));
-const RoleSelectPage     = lazy(() => import('./pages/RoleSelectPage'));
-const DriverPricingPage  = lazy(() => import('./pages/DriverPricingPage'));
-const OperatorPricingPage = lazy(() => import('./pages/OperatorPricingPage'));
+const LandingPage        = retryLazy(() => import('./pages/LandingPage'));
+const LoginPage          = retryLazy(() => import('./pages/LoginPage'));
+const SignupPage         = retryLazy(() => import('./pages/SignupPage'));
+const RoleSelectPage     = retryLazy(() => import('./pages/RoleSelectPage'));
+const DriverPricingPage  = retryLazy(() => import('./pages/DriverPricingPage'));
+const OperatorPricingPage = retryLazy(() => import('./pages/OperatorPricingPage'));
 
-const MapPage            = lazy(() => import('./pages/MapPage'));
-const StationDetailsPage = lazy(() => import('./pages/StationDetailsPage'));
-const QueuePage          = lazy(() => import('./pages/QueuePage'));
-const TripsPage          = lazy(() => import('./pages/TripsPage'));
-const CalculatorPage     = lazy(() => import('./pages/CalculatorPage'));
-const CommunityPage      = lazy(() => import('./pages/CommunityPage'));
-const ProfilePage        = lazy(() => import('./pages/ProfilePage'));
-const VehiclePage        = lazy(() => import('./pages/VehiclePage'));
+const MapPage            = retryLazy(() => import('./pages/MapPage'));
+const StationDetailsPage = retryLazy(() => import('./pages/StationDetailsPage'));
+const QueuePage          = retryLazy(() => import('./pages/QueuePage'));
+const TripsPage          = retryLazy(() => import('./pages/TripsPage'));
+const CalculatorPage     = retryLazy(() => import('./pages/CalculatorPage'));
+const CommunityPage      = retryLazy(() => import('./pages/CommunityPage'));
+const ProfilePage        = retryLazy(() => import('./pages/ProfilePage'));
+const VehiclePage        = retryLazy(() => import('./pages/VehiclePage'));
 
-const OperatorDashboardPage = lazy(() => import('./pages/operator/OperatorDashboardPage'));
-const MyStationsPage     = lazy(() => import('./pages/operator/MyStationsPage'));
-const AddStationPage     = lazy(() => import('./pages/operator/AddStationPage'));
-const OperatorAnalyticsPage = lazy(() => import('./pages/operator/OperatorAnalyticsPage'));
-const OperatorQueuePage  = lazy(() => import('./pages/operator/OperatorQueuePage'));
-const FaultReportsPage   = lazy(() => import('./pages/operator/FaultReportsPage'));
-const OperatorSettingsPage = lazy(() => import('./pages/operator/OperatorSettingsPage'));
+const OperatorDashboardPage = retryLazy(() => import('./pages/operator/OperatorDashboardPage'));
+const MyStationsPage     = retryLazy(() => import('./pages/operator/MyStationsPage'));
+const AddStationPage     = retryLazy(() => import('./pages/operator/AddStationPage'));
+const OperatorAnalyticsPage = retryLazy(() => import('./pages/operator/OperatorAnalyticsPage'));
+const OperatorQueuePage  = retryLazy(() => import('./pages/operator/OperatorQueuePage'));
+const FaultReportsPage   = retryLazy(() => import('./pages/operator/FaultReportsPage'));
+const OperatorSettingsPage = retryLazy(() => import('./pages/operator/OperatorSettingsPage'));
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const PUBLIC_PATHS = ['/', '/login', '/signup', '/role-select', '/pricing-driver', '/pricing-operator'];

@@ -18,6 +18,17 @@ export const AuthProvider = ({ children }) => {
     const [userRole, setUserRoleState] = useState(() => localStorage.getItem('vc_role') || 'driver');
     const [userPlan, setUserPlanState] = useState(() => localStorage.getItem('vc_plan') || 'free');
 
+    // Prevent infinite loading if Firebase hangs
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (loading) {
+                console.warn("Firebase Auth timeout: forcing load completion");
+                setLoading(false);
+            }
+        }, 8000); // 8 second max wait
+        return () => clearTimeout(timeout);
+    }, [loading]);
+
     const setUserRole = async (role) => {
         localStorage.setItem('vc_role', role);
         setUserRoleState(role);
@@ -86,9 +97,21 @@ export const AuthProvider = ({ children }) => {
         userRole, setUserRole, userPlan, setUserPlan
     };
 
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #2979FF, #00B4D8)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, animation: 'pulse 2s infinite' }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontFamily: 'Rajdhani', fontSize: 18, fontWeight: 600, letterSpacing: 1 }}>Initializing VoltConnect...</div>
+                <style>{`@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.95); } }`}</style>
+            </div>
+        );
+    }
+
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };
