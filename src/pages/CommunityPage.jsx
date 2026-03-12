@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Star, Camera, CheckCircle2, AlertTriangle, Shield, Zap, LogOut, Award } from 'lucide-react';
 

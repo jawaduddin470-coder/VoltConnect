@@ -8,7 +8,7 @@ import Navbar from './components/Navbar';
 import SideNav from './components/SideNav';
 import OperatorNav from './components/OperatorNav';
 import Footer from './components/Footer';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';

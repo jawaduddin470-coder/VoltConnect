@@ -14,7 +14,17 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const analytics = getAnalytics(app);
+
+let analytics = null;
+try {
+    if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+        analytics = getAnalytics(app);
+    }
+} catch (e) {
+    console.error("Firebase Analytics initialization failed", e);
+}
+
+export { analytics };
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();

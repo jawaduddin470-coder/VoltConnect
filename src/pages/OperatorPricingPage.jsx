@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useRazorpay } from '../hooks/useRazorpay';
 import { Check, ArrowRight, Zap, Star, Rocket, Gift, Loader2 } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Save, Building2, Mail, Phone, CreditCard, Bell } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const OperatorSettingsPage = () => {
     const { userPlan } = useAuth();
