@@ -23,6 +23,16 @@ const LoginPage = () => {
         if (window.confirm("This will clear all saved data and refresh the app to the latest version. Proceed?")) {
             localStorage.clear();
             sessionStorage.clear();
+            
+            // Clear IndexedDB (where Firebase Auth often hangs)
+            if ('indexedDB' in window) {
+                indexedDB.databases().then(dbs => {
+                    dbs.forEach(db => {
+                        window.indexedDB.deleteDatabase(db.name);
+                    });
+                }).catch(err => console.error("Error clearing IndexedDB:", err));
+            }
+
             // Try to unregister service workers if any
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(registrations => {

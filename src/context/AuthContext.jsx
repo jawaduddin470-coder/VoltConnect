@@ -60,50 +60,53 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let isMounted = true;
+        console.log("AuthContext: Initializing...");
 
         const initializeAuth = async () => {
             try {
-                // 1. Force local persistence (Crucial for PWAs)
+                // 1. Check persistence
+                console.log("AuthContext: Setting persistence...");
                 await setPersistence(auth, browserLocalPersistence);
                 
-                // 2. Check for redirect result BEFORE listening to state changes
+                // 2. Check for redirect result
+                console.log("AuthContext: Checking for redirect result...");
                 const result = await getRedirectResult(auth);
                 if (result) {
-                    console.log("AuthContext: Successfully logged in via redirect", result.user.email);
+                    console.log("AuthContext: Found redirect result for:", result.user.email);
+                    setUser(result.user); // Set immediately
+                } else {
+                    console.log("AuthContext: No redirect result found.");
                 }
             } catch (error) {
-                console.error("AuthContext: Initialization/Redirect error", error);
+                console.error("AuthContext: Initialization/Redirect error:", error.code, error.message);
+                // alert("Login Error: " + error.message); // Emergency alert for mobile debugging
             }
 
             // 3. Listen for state changes
+            console.log("AuthContext: Attaching onAuthStateChanged listener...");
             const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
                 if (!isMounted) return;
                 
-                // Set user immediately and stop blocking the UI
+                console.log("AuthContext: Auth state changed. User:", currentUser ? currentUser.email : "none");
                 setUser(currentUser);
                 setLoading(false);
 
                 if (currentUser) {
-                    // Fetch profile data in the background
                     try {
                         const userRef = doc(db, 'users', currentUser.uid);
                         const docSnap = await getDoc(userRef);
                         if (docSnap.exists()) {
                             const data = docSnap.data();
+                            console.log("AuthContext: Profile loaded for:", currentUser.email);
                             if (data.role && data.role !== userRole) {
                                 setUserRoleState(data.role);
                                 localStorage.setItem('vc_role', data.role);
                             }
-                            if (data.subscription_plan && data.subscription_plan !== userPlan) {
-                                setUserPlanState(data.subscription_plan);
-                                localStorage.setItem('vc_plan', data.subscription_plan);
-                            }
                         } else {
-                            // Create default profile if missing
+                            console.log("AuthContext: Creating new profile for:", currentUser.email);
                             await setDoc(userRef, {
                                 email: currentUser.email,
                                 role: localStorage.getItem('vc_role') || 'driver',
-                                subscription_plan: localStorage.getItem('vc_plan') || 'free',
                                 created_at: new Date().toISOString()
                             }, { merge: true });
                         }
@@ -113,7 +116,6 @@ export const AuthProvider = ({ children }) => {
                 }
             });
 
-            // Clean up listener on unmount
             return unsubscribe;
         };
 
