@@ -62,70 +62,55 @@ export const AuthProvider = ({ children }) => {
         let isMounted = true;
         console.log("AuthContext: Initializing...");
 
-        const initializeAuth = async () => {
-            try {
-                // 1. Check persistence
-                console.log("AuthContext: Setting persistence...");
-                await setPersistence(auth, browserLocalPersistence);
-                
-                // 2. Check for redirect result
-                console.log("AuthContext: Checking for redirect result...");
-                const result = await getRedirectResult(auth);
-                if (result) {
-                    console.log("AuthContext: Found redirect result for:", result.user.email);
-                    setUser(result.user); // Set immediately
-                } else {
-                    console.log("AuthContext: No redirect result found.");
-                }
-            } catch (error) {
-                console.error("AuthContext: Initialization/Redirect error:", error.code, error.message);
-                // alert("Login Error: " + error.message); // Emergency alert for mobile debugging
-            }
+        // 1. Set persistence immediately
+        setPersistence(auth, browserLocalPersistence).catch(err => {
+            console.error("AuthContext: Persistence error", err);
+        });
 
-            // 3. Listen for state changes
-            console.log("AuthContext: Attaching onAuthStateChanged listener...");
-            const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-                if (!isMounted) return;
-                
-                console.log("AuthContext: Auth state changed. User:", currentUser ? currentUser.email : "none");
-                setUser(currentUser);
-                setLoading(false);
+        // 2. Main Auth Listener
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (!isMounted) return;
+            console.log("AuthContext: State changed. User:", currentUser?.email || 'none');
+            setUser(currentUser);
+            setLoading(false);
+            localStorage.removeItem('vc_auth_pending');
 
-                if (currentUser) {
-                    try {
-                        const userRef = doc(db, 'users', currentUser.uid);
-                        const docSnap = await getDoc(userRef);
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
-                            console.log("AuthContext: Profile loaded for:", currentUser.email);
-                            if (data.role && data.role !== userRole) {
-                                setUserRoleState(data.role);
-                                localStorage.setItem('vc_role', data.role);
-                            }
-                        } else {
-                            console.log("AuthContext: Creating new profile for:", currentUser.email);
-                            await setDoc(userRef, {
-                                email: currentUser.email,
-                                role: localStorage.getItem('vc_role') || 'driver',
-                                created_at: new Date().toISOString()
-                            }, { merge: true });
+            if (currentUser) {
+                try {
+                    const userRef = doc(db, 'users', currentUser.uid);
+                    const docSnap = await getDoc(userRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.role && data.role !== userRole) {
+                            setUserRoleState(data.role);
+                            localStorage.setItem('vc_role', data.role);
                         }
-                    } catch (e) {
-                        console.warn("AuthContext: Background profile fetch error", e);
                     }
+                } catch (e) {
+                    console.warn("AuthContext: Profile fetch error", e);
                 }
+            }
+        });
+
+        // 3. Parallel Redirect Check (for those coming back from Google)
+        if (localStorage.getItem('vc_auth_pending')) {
+            console.log("AuthContext: Processing pending redirect...");
+            getRedirectResult(auth).then(result => {
+                if (result && isMounted) {
+                    console.log("AuthContext: Redirect success:", result.user.email);
+                    setUser(result.user);
+                }
+                localStorage.removeItem('vc_auth_pending');
+            }).catch(error => {
+                console.error("AuthContext: Redirect check error", error);
+                localStorage.removeItem('vc_auth_pending');
+                setLoading(false);
             });
-
-            return unsubscribe;
-        };
-
-        const cleanupPromise = initializeAuth();
+        }
 
         return () => {
             isMounted = false;
-            cleanupPromise.then(unsubscribe => {
-                if (unsubscribe) unsubscribe();
-            });
+            unsubscribe();
         };
     }, []);
 
@@ -134,11 +119,16 @@ export const AuthProvider = ({ children }) => {
     
     const loginWithGoogle = async () => {
         try {
-            // Use redirect as primary for better PWA/Mobile compatibility
-            await signInWithRedirect(auth, googleProvider);
-            // Page will redirect away; control never reaches here on success
+            console.log("AuthContext: Attempting Google Popup...");
+            const result = await signInWithPopup(auth, googleProvider);
+            return result;
         } catch (error) {
-            console.error("AuthContext: Google sign-in start error", error);
+            console.warn("AuthContext: Popup failed, trying Redirect...", error.code);
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                localStorage.setItem('vc_auth_pending', 'true');
+                await signInWithRedirect(auth, googleProvider);
+                return;
+            }
             throw error;
         }
     };

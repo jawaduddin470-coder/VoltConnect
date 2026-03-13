@@ -63,18 +63,33 @@ const LoginPage = () => {
     const handleGoogle = async () => {
         setError('');
         try {
-            console.log("Initiating Google Login redirect...");
-            await loginWithGoogle();
-            // Control will navigate away from this page
+            console.log("Initiating Google Login...");
+            const result = await loginWithGoogle();
+            // If popup succeeded, result is truthy -> navigate immediately
+            if (result) {
+                navigate(userRole === 'driver' ? '/map' : '/operator/dashboard');
+            }
         } catch (err) {
             console.error('Google login error details:', err.code, err.message);
             if (err.code === 'auth/unauthorized-domain') {
-                setError('This domain is not authorized for Google Sign-In. Check your Firebase Console → Authentication → Settings → Authorized domains.');
+                setError('This domain is not authorized for Google Sign-In. Check your Firebase Console.');
             } else {
                 setError(err.message.replace('Firebase: ', '').replace(/\(.*\)$/, '').trim());
             }
         }
     };
+
+    const isPending = authLoading || localStorage.getItem('vc_auth_pending');
+
+    if (isPending) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
+                <div style={{ width: 40, height: 40, border: '3px solid var(--bg-border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <p style={{ marginTop: 20, color: 'var(--text-secondary)', fontFamily: 'Rajdhani', fontSize: 16 }}>Verifying identity...</p>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="page-container" style={{
