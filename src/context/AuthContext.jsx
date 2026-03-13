@@ -7,6 +7,8 @@ import {
     getRedirectResult,
     signOut,
     onAuthStateChanged,
+    setPersistence,
+    browserLocalPersistence
 } from 'firebase/auth';
 // Keep all imports; signInWithRedirect is used as a popup fallback
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -57,55 +59,72 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        // Handle redirect result (for Google Sign-in)
-        const checkRedirect = async () => {
+        let isMounted = true;
+
+        const initializeAuth = async () => {
             try {
-                // This is crucial for returning from a Google redirect
+                // 1. Force local persistence (Crucial for PWAs)
+                await setPersistence(auth, browserLocalPersistence);
+                
+                // 2. Check for redirect result BEFORE listening to state changes
                 const result = await getRedirectResult(auth);
                 if (result) {
                     console.log("AuthContext: Successfully logged in via redirect", result.user.email);
                 }
             } catch (error) {
-                console.error("AuthContext: Redirect result error", error);
+                console.error("AuthContext: Initialization/Redirect error", error);
             }
-        };
-        checkRedirect();
 
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            // Set user immediately and stop blocking the UI
-            setUser(currentUser);
-            setLoading(false);
+            // 3. Listen for state changes
+            const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+                if (!isMounted) return;
+                
+                // Set user immediately and stop blocking the UI
+                setUser(currentUser);
+                setLoading(false);
 
-            if (currentUser) {
-                // Fetch profile data in the background
-                try {
-                    const userRef = doc(db, 'users', currentUser.uid);
-                    const docSnap = await getDoc(userRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        if (data.role && data.role !== userRole) {
-                            setUserRoleState(data.role);
-                            localStorage.setItem('vc_role', data.role);
+                if (currentUser) {
+                    // Fetch profile data in the background
+                    try {
+                        const userRef = doc(db, 'users', currentUser.uid);
+                        const docSnap = await getDoc(userRef);
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            if (data.role && data.role !== userRole) {
+                                setUserRoleState(data.role);
+                                localStorage.setItem('vc_role', data.role);
+                            }
+                            if (data.subscription_plan && data.subscription_plan !== userPlan) {
+                                setUserPlanState(data.subscription_plan);
+                                localStorage.setItem('vc_plan', data.subscription_plan);
+                            }
+                        } else {
+                            // Create default profile if missing
+                            await setDoc(userRef, {
+                                email: currentUser.email,
+                                role: localStorage.getItem('vc_role') || 'driver',
+                                subscription_plan: localStorage.getItem('vc_plan') || 'free',
+                                created_at: new Date().toISOString()
+                            }, { merge: true });
                         }
-                        if (data.subscription_plan && data.subscription_plan !== userPlan) {
-                            setUserPlanState(data.subscription_plan);
-                            localStorage.setItem('vc_plan', data.subscription_plan);
-                        }
-                    } else {
-                        // Create default profile if missing
-                        await setDoc(userRef, {
-                            email: currentUser.email,
-                            role: localStorage.getItem('vc_role') || 'driver',
-                            subscription_plan: localStorage.getItem('vc_plan') || 'free',
-                            created_at: new Date().toISOString()
-                        }, { merge: true });
+                    } catch (e) {
+                        console.warn("AuthContext: Background profile fetch error", e);
                     }
-                } catch (e) {
-                    console.warn("AuthContext: Background profile fetch error", e);
                 }
-            }
-        });
-        return unsubscribe;
+            });
+
+            // Clean up listener on unmount
+            return unsubscribe;
+        };
+
+        const cleanupPromise = initializeAuth();
+
+        return () => {
+            isMounted = false;
+            cleanupPromise.then(unsubscribe => {
+                if (unsubscribe) unsubscribe();
+            });
+        };
     }, []);
 
     const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
