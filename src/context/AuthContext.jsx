@@ -8,6 +8,7 @@ import {
     signOut,
     onAuthStateChanged,
 } from 'firebase/auth';
+// Keep all imports; signInWithRedirect is used as a popup fallback
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase';
 
@@ -56,19 +57,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        // Handle redirect result (for Google Sign-in)
-        const checkRedirect = async () => {
-            try {
-                const result = await getRedirectResult(auth);
-                if (result) {
-                    console.log("AuthContext: Successfully logged in via redirect", result.user.email);
-                }
-            } catch (error) {
-                console.error("AuthContext: Redirect result error", error);
-            }
-        };
-        checkRedirect();
-
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             // Set user immediately and stop blocking the UI
             setUser(currentUser);
@@ -111,9 +99,17 @@ export const AuthProvider = ({ children }) => {
     
     const loginWithGoogle = async () => {
         try {
-            await signInWithRedirect(auth, googleProvider);
+            // Try popup first (works in browsers and PWA)
+            const result = await signInWithPopup(auth, googleProvider);
+            return result;
         } catch (error) {
-            console.error("AuthContext: Redirect start error", error);
+            // If popup is blocked, fall back to redirect
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+                console.warn("AuthContext: Popup blocked/closed, trying redirect...", error.code);
+                await signInWithRedirect(auth, googleProvider);
+                return; // page will redirect, no further action needed
+            }
+            console.error("AuthContext: Google sign-in error", error);
             throw error;
         }
     };

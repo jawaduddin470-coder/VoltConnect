@@ -1,5 +1,5 @@
 import React from 'react';
-import { Linkedin, Zap } from 'lucide-react';
+import { Github, Zap } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 const Footer = () => {
@@ -30,7 +30,7 @@ const Footer = () => {
                 </p>
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
                     <a
-                        href="https://www.linkedin.com/in/merajuddin-0751a6396"
+                        href="https://github.com/jawaduddin470-coder"
                         target="_blank" rel="noopener noreferrer"
                         style={{
                             display: 'inline-flex',
@@ -44,11 +44,11 @@ const Footer = () => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <Linkedin size={14} />
+                        <Github size={14} />
                         Meraj Uddin
                     </a>
                     <a
-                        href="https://www.linkedin.com/in/mohd-basheer-ahmed-5247593a6/?lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base_contact_details%3BUCTVRMwzSIGpz55RAd6TkQ%3D%3D"
+                        href="https://github.com/jawaduddin470-coder/VoltConnect"
                         target="_blank" rel="noopener noreferrer"
                         style={{
                             display: 'inline-flex',
@@ -62,8 +62,8 @@ const Footer = () => {
                         onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
                         onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     >
-                        <Linkedin size={14} />
-                        Basheer Ahmed
+                        <Github size={14} />
+                        Repo Source
                     </a>
                 </div>
             </div>
