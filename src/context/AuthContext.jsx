@@ -57,6 +57,20 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        // Handle redirect result (for Google Sign-in)
+        const checkRedirect = async () => {
+            try {
+                // This is crucial for returning from a Google redirect
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    console.log("AuthContext: Successfully logged in via redirect", result.user.email);
+                }
+            } catch (error) {
+                console.error("AuthContext: Redirect result error", error);
+            }
+        };
+        checkRedirect();
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             // Set user immediately and stop blocking the UI
             setUser(currentUser);
@@ -99,17 +113,11 @@ export const AuthProvider = ({ children }) => {
     
     const loginWithGoogle = async () => {
         try {
-            // Try popup first (works in browsers and PWA)
-            const result = await signInWithPopup(auth, googleProvider);
-            return result;
+            // Use redirect as primary for better PWA/Mobile compatibility
+            await signInWithRedirect(auth, googleProvider);
+            // Page will redirect away; control never reaches here on success
         } catch (error) {
-            // If popup is blocked, fall back to redirect
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                console.warn("AuthContext: Popup blocked/closed, trying redirect...", error.code);
-                await signInWithRedirect(auth, googleProvider);
-                return; // page will redirect, no further action needed
-            }
-            console.error("AuthContext: Google sign-in error", error);
+            console.error("AuthContext: Google sign-in start error", error);
             throw error;
         }
     };

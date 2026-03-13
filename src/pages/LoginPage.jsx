@@ -37,21 +37,13 @@ const LoginPage = () => {
     const handleGoogle = async () => {
         setError('');
         try {
-            console.log("Initiating Google Login...");
-            const result = await loginWithGoogle();
-            // If popup succeeded, result is truthy → navigate immediately
-            if (result) {
-                navigate(userRole === 'driver' ? '/map' : '/operator/dashboard');
-            }
-            // If redirect was triggered (popup blocked), the page will navigate away — do nothing
+            console.log("Initiating Google Login redirect...");
+            await loginWithGoogle();
+            // Control will navigate away from this page
         } catch (err) {
             console.error('Google login error details:', err.code, err.message);
-            if (err.code === 'auth/popup-closed-by-user') {
-                setError('Sign-in cancelled. Please try again.');
-            } else if (err.code === 'auth/unauthorized-domain') {
+            if (err.code === 'auth/unauthorized-domain') {
                 setError('This domain is not authorized for Google Sign-In. Check your Firebase Console → Authentication → Settings → Authorized domains.');
-            } else if (err.code === 'auth/cancelled-popup-request') {
-                // silently ignore — another popup was opened
             } else {
                 setError(err.message.replace('Firebase: ', '').replace(/\(.*\)$/, '').trim());
             }
