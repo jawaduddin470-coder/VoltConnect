@@ -19,6 +19,22 @@ const LoginPage = () => {
         }
     }, [user, authLoading, userRole, navigate]);
 
+    const handleReset = () => {
+        if (window.confirm("This will clear all saved data and refresh the app to the latest version. Proceed?")) {
+            localStorage.clear();
+            sessionStorage.clear();
+            // Try to unregister service workers if any
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+            window.location.reload(true);
+        }
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
@@ -159,6 +175,18 @@ const LoginPage = () => {
                     Don't have an account?{' '}
                     <Link to="/signup" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>Sign up free</Link>
                 </p>
+
+                {/* Emergency cache clear */}
+                <div style={{ marginTop: 32, borderTop: '1px solid var(--bg-border)', paddingTop: 16, textAlign: 'center' }}>
+                    <button 
+                        onClick={handleReset}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline', opacity: 0.6 }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0.6}
+                    >
+                        App behaving strangely? Clear cache & Force Update
+                    </button>
+                </div>
             </div>
         </div>
     );
