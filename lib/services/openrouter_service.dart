@@ -1,0 +1,98 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+class OpenRouterService {
+  static const List<String> _models = [
+    'meta-llama/llama-3.2-3b-instruct:free',
+    'mistralai/mistral-7b-instruct:free',
+    'google/gemma-2-9b-it:free',
+  ];
+
+  static const String _systemPrompt =
+      'You are Volt, the VoltConnect AI assistant for EV drivers in India. '
+      'Help users find charging stations, plan trips, understand membership plans '
+      '(Basic ₹399/month, Pro ₹699/month, Premium ₹1199/month), and answer EV questions. '
+      'Be concise, friendly, and knowledgeable about Indian EVs like Tata Nexon EV, '
+      'MG ZS EV, Ather 450X, Ola S1 Pro. Keep responses under 80 words unless '
+      'asked for more detail.';
+
+  Future<String> sendMessage(List<Map<String, String>> history) async {
+    final apiKey = dotenv.env['OPENROUTER_API_KEY'] ??
+        dotenv.env['VITE_OPENROUTER_API_KEY'] ?? '';
+
+    if (apiKey.isEmpty || apiKey == 'your_key_here') {
+      return 'Volt AI is not configured. Please add your OpenRouter API key to the .env file.';
+    }
+
+    final messages = [
+      {'role': 'system', 'content': _systemPrompt},
+      ...history,
+    ];
+
+    for (final model in _models) {
+      try {
+        final response = await http
+            .post(
+              Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+              headers: {
+                'Authorization': 'Bearer $apiKey',
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://voltconnect.app',
+                'X-Title': 'VoltConnect',
+              },
+              body: jsonEncode({
+                'model': model,
+                'messages': messages,
+                'max_tokens': 300,
+                'temperature': 0.7,
+              }),
+            )
+            .timeout(const Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final content = data['choices']?[0]?['message']?['content'];
+          if (content != null && (content as String).isNotEmpty) return content;
+        } else if (response.statusCode == 401) {
+          return 'API key is invalid. Please check your OpenRouter key in the .env file.';
+        } else if (response.statusCode == 402) {
+          return 'OpenRouter account has no credits. Please top up at openrouter.ai.';
+        } else if (response.statusCode == 429) {
+          // Wait 5 seconds and retry once
+          await Future.delayed(const Duration(seconds: 5));
+          try {
+            final retryResponse = await http.post(
+              Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+              headers: {
+                'Authorization': 'Bearer $apiKey',
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://voltconnect.app',
+                'X-Title': 'VoltConnect',
+              },
+              body: jsonEncode({
+                'model': model,
+                'messages': messages,
+                'max_tokens': 300,
+                'temperature': 0.7,
+              }),
+            ).timeout(const Duration(seconds: 30));
+
+            if (retryResponse.statusCode == 200) {
+              final data = jsonDecode(retryResponse.body);
+              final content = data['choices']?[0]?['message']?['content'];
+              if (content != null && (content as String).isNotEmpty) return content;
+            }
+          } catch (_) {}
+          
+          return 'Volt AI is processing too many requests right now. Please try again in a few moments.';
+        }
+        // 404 or other: try next model
+      } catch (_) {
+        // network error: try next model
+      }
+    }
+
+    return 'Volt is having trouble right now. Please check your internet connection and try again.';
+  }
+}
