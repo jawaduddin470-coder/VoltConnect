@@ -1,99 +1,157 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import '../../services/auth_service.dart';
-import '../../theme/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({super.key});
-
   @override
   State<HubScreen> createState() => _HubScreenState();
 }
 
-class _HubScreenState extends State<HubScreen> with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  final AuthService _authService = AuthService();
-  String? _userRole;
-  String _greeting = "Hello";
+class _HubScreenState extends State<HubScreen>
+    with TickerProviderStateMixin {
+
+  String userName = "User";
+  String userRole = "consumer";
+  late List<AnimationController> _controllers;
+  late List<Animation<Offset>> _slideAnimations;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _loadUserRole();
-    _updateGreeting();
-    _fadeController.forward();
+    _loadUser();
+    _setupAnimations();
   }
 
-  void _updateGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      _greeting = "Good morning";
-    } else if (hour < 17) {
-      _greeting = "Good afternoon";
-    } else {
-      _greeting = "Good evening";
-    }
-  }
-
-  Future<void> _loadUserRole() async {
+  void _loadUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final role = await _authService.getUserRole(user.uid);
-      if (mounted) setState(() => _userRole = role);
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (mounted) {
+        setState(() {
+          userName = doc.data()?['name'] ??
+                     user.displayName ??
+                     user.email?.split('@')[0] ??
+                     'User';
+          userRole = doc.data()?['role'] ?? 'consumer';
+        });
+      }
     }
+  }
+
+  void _setupAnimations() {
+    _controllers = List.generate(3, (i) => AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    ));
+    _slideAnimations = _controllers.map((c) =>
+      Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(CurvedAnimation(parent: c, curve: Curves.easeOut))
+    ).toList();
+
+    // Staggered entry
+    Future.delayed(const Duration(milliseconds: 100),
+      () { if (mounted) _controllers[0].forward(); });
+    Future.delayed(const Duration(milliseconds: 200),
+      () { if (mounted) _controllers[1].forward(); });
+    Future.delayed(const Duration(milliseconds: 300),
+      () { if (mounted) _controllers[2].forward(); });
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    for (var c in _controllers) c.dispose();
     super.dispose();
   }
 
-  void _showRestrictedSheet(String title, String subtitle, IconData icon, Color color, {String? ctaLabel}) {
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }
+
+  void _handlePartnerTap() {
+    if (userRole == 'partner' || userRole == 'admin') {
+      context.go('/operator/dashboard');
+    } else {
+      _showAccessDenied(
+        title: "Partner Access Required",
+        message: "You need a partner account to access this area.",
+        showApply: true,
+      );
+    }
+  }
+
+  void _handleAdminTap() {
+    if (userRole == 'admin') {
+      // Admin panel is on the web platform; show info for mobile
+      _showAccessDenied(
+        title: "🔒 Admin Panel",
+        message: "The Admin Panel is available on the VoltConnect web platform at voltconnect-platform.vercel.app",
+        showApply: false,
+      );
+    } else {
+      _showAccessDenied(
+        title: "🔒 Restricted Access",
+        message: "This area is for VoltConnect staff only.",
+        showApply: false,
+      );
+    }
+  }
+
+  void _showAccessDenied({
+    required String title,
+    required String message,
+    required bool showApply,
+  }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
+      backgroundColor: const Color(0xFF141414),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Color(0xFF141414),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[700],
+                borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(title, style: const TextStyle(
+              color: Colors.white, fontSize: 18,
+              fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text(message, textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF888888))),
             const SizedBox(height: 24),
-            Container(width: 52, height: 52, decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle), child: Icon(icon, color: color, size: 28)),
-            const SizedBox(height: 16),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 14, lineHeight: 1.5)),
-            const SizedBox(height: 32),
-            if (ctaLabel != null)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: Text(ctaLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(minimumSize: const Size(double.infinity, 50), foregroundColor: Colors.white38),
-              child: const Text("Cancel"),
-            ),
+            if (showApply) SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C853),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12))),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Apply for Partner Access",
+                  style: TextStyle(color: Colors.black,
+                    fontWeight: FontWeight.bold)))),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel",
+                  style: TextStyle(color: Color(0xFF888888))))),
           ],
         ),
       ),
@@ -102,80 +160,164 @@ class _HubScreenState extends State<HubScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final displayName = user?.displayName ?? user?.email?.split('@')[0] ?? "there";
-
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: const Color(0xFF00C853).withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF00C853).withOpacity(0.2))),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(LucideIcons.zap, size: 14, color: Color(0xFF00C853)), SizedBox(width: 6), Text("VoltConnect Hub", style: TextStyle(color: Color(0xFF00C853), fontWeight: FontWeight.bold, fontSize: 12))]),
+              // Top bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00C853).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: const Color(0xFF00C853).withOpacity(0.4)),
+                    ),
+                    child: const Row(children: [
+                      Text("⚡", style: TextStyle(fontSize: 14)),
+                      SizedBox(width: 6),
+                      Text("VoltConnect Hub",
+                        style: TextStyle(color: Color(0xFF00C853),
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                    ]),
+                  ),
+                  // Status pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141414),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                    ),
+                    child: const Row(children: [
+                      Icon(Icons.circle, color: Color(0xFF00C853), size: 8),
+                      SizedBox(width: 6),
+                      Text("All Systems Online",
+                        style: TextStyle(color: Colors.white70,
+                          fontSize: 11)),
+                    ]),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Text("$_greeting,\n$displayName 👋", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1, height: 1.1)),
-              const SizedBox(height: 8),
-              const Text("What are you here for today?", style: TextStyle(color: Colors.white38, fontSize: 16)),
+
               const SizedBox(height: 32),
 
-              _HubCard(
-                index: 0, controller: _fadeController,
-                title: "Find & Book Chargers", subtitle: "Discover stations, book slots, manage wallet", icon: LucideIcons.smartphone, color: const Color(0xFF00C853), badge: "🟢 LIVE",
-                pills: const ["Map", "Book", "Wallet"], cta: "Open Consumer App →",
-                onTap: () => context.go('/driver/map'),
-              ),
-              const SizedBox(height: 16),
-              _HubCard(
-                index: 1, controller: _fadeController,
-                title: "Partner Dashboard", subtitle: "Manage stations and track revenue", icon: LucideIcons.building, color: const Color(0xFF1565C0), badge: "🔒 B2B Access",
-                pills: const ["Analytics", "Revenue"], cta: "Open Partner Portal →",
-                onTap: () {
-                  if (_userRole == 'partner' || _userRole == 'admin') {
-                    context.go('/operator/dashboard');
-                  } else {
-                    _showRestrictedSheet("Partner Access Required", "You need a partner account to access this area. Apply via our website to get started.", LucideIcons.building, const Color(0xFF1565C0), ctaLabel: "Apply for Access");
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              _HubCard(
-                index: 2, controller: _fadeController,
-                title: "Admin Panel", subtitle: "Internal operations and payouts", icon: LucideIcons.shieldCheck, color: const Color(0xFFEF4444), badge: "🔐 Internal Only",
-                pills: const ["Disputes", "Users"], cta: "Open Admin Panel →",
-                onTap: () {
-                  if (_userRole == 'admin') {
-                    // Navigate to admin if implemented in Flutter, or show restricted
-                    _showRestrictedSheet("Restricted Access", "This area is only accessible to VoltConnect internal staff.", LucideIcons.lock, const Color(0xFFEF4444));
-                  } else {
-                    _showRestrictedSheet("Restricted Access", "This area is only accessible to VoltConnect internal staff.", LucideIcons.lock, const Color(0xFFEF4444));
-                  }
-                },
-              ),
-              const SizedBox(height: 40),
+              // Greeting
+              Text("${_getGreeting()},",
+                style: const TextStyle(
+                  color: Color(0xFF888888), fontSize: 16)),
+              const SizedBox(height: 4),
+              Text(userName,
+                style: const TextStyle(
+                  color: Colors.white, fontSize: 28,
+                  fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text("What are you here for today?",
+                style: TextStyle(
+                  color: Color(0xFF888888), fontSize: 14)),
 
-              // Horizontal stats scroll
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _StatPill(emoji: "⚡", label: "1,500+ Stations"),
-                    const SizedBox(width: 8),
-                    _StatPill(emoji: "🌆", label: "12 Cities"),
-                    const SizedBox(width: 8),
-                    _StatPill(emoji: "🔋", label: "Active: 847"),
-                  ],
+              const SizedBox(height: 32),
+
+              // Card 1 — Consumer
+              SlideTransition(
+                position: _slideAnimations[0],
+                child: _HubCard(
+                  icon: Icons.electric_bolt,
+                  iconColor: const Color(0xFF00C853),
+                  borderColor: const Color(0xFF00C853),
+                  title: "Find & Book Chargers",
+                  subtitle: "Discover stations, book slots, "
+                      "manage your EV wallet",
+                  tags: const ["🗺️ Map", "📅 Book", "💳 Wallet"],
+                  tagColor: const Color(0xFF00C853),
+                  badge: "🟢 LIVE",
+                  badgeColor: const Color(0xFF00C853),
+                  buttonLabel: "Open Consumer App →",
+                  buttonColor: const Color(0xFF00C853),
+                  buttonTextColor: Colors.black,
+                  onTap: () => context.go('/driver/map'),
                 ),
               ),
-              const SizedBox(height: 48),
-              Center(child: Text("© 2026 VoltConnect · All rights reserved", style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 12))),
+
+              const SizedBox(height: 16),
+
+              // Card 2 — Partner
+              SlideTransition(
+                position: _slideAnimations[1],
+                child: _HubCard(
+                  icon: Icons.business,
+                  iconColor: const Color(0xFF1565C0),
+                  borderColor: const Color(0xFF1565C0),
+                  title: "Partner Dashboard",
+                  subtitle: "Manage stations, track revenue "
+                      "and bookings",
+                  tags: const ["📊 Analytics", "🗺️ Stations", "💰 Revenue"],
+                  tagColor: const Color(0xFF1565C0),
+                  badge: "🔒 B2B",
+                  badgeColor: const Color(0xFF1565C0),
+                  buttonLabel: "Open Partner Portal →",
+                  buttonColor: const Color(0xFF1565C0),
+                  buttonTextColor: Colors.white,
+                  onTap: _handlePartnerTap,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Card 3 — Admin
+              SlideTransition(
+                position: _slideAnimations[2],
+                child: _HubCard(
+                  icon: Icons.shield,
+                  iconColor: const Color(0xFFB71C1C),
+                  borderColor: const Color(0xFFB71C1C),
+                  title: "Admin Panel",
+                  subtitle: "Internal operations, commissions, "
+                      "disputes & payouts",
+                  tags: const ["⚖️ Disputes", "💸 Payouts", "👤 Users"],
+                  tagColor: const Color(0xFFB71C1C),
+                  badge: "🔐 Internal",
+                  badgeColor: const Color(0xFFB71C1C),
+                  buttonLabel: "Open Admin Panel →",
+                  buttonColor: const Color(0xFFB71C1C),
+                  buttonTextColor: Colors.white,
+                  onTap: _handleAdminTap,
+                ),
+              ),
+
               const SizedBox(height: 24),
+
+              // Quick stats
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  _statPill("⚡ 1,500+ Stations"),
+                  const SizedBox(width: 8),
+                  _statPill("🌆 12 Cities"),
+                  const SizedBox(width: 8),
+                  _statPill("🔋 Active Now: 847"),
+                  const SizedBox(width: 8),
+                  _statPill("👥 50K+ Users"),
+                ]),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Footer
+              const Center(
+                child: Text("© 2026 VoltConnect · All rights reserved",
+                  style: TextStyle(
+                    color: Color(0xFF444444), fontSize: 12)),
+              ),
             ],
           ),
         ),
@@ -184,53 +326,123 @@ class _HubScreenState extends State<HubScreen> with TickerProviderStateMixin {
   }
 }
 
-class _HubCard extends StatelessWidget {
-  final int index;
-  final AnimationController controller;
-  final String title, subtitle, badge, cta;
+// Reusable Hub Card Widget
+class _HubCard extends StatefulWidget {
   final IconData icon;
-  final Color color;
-  final List<String> pills;
+  final Color iconColor, borderColor, tagColor, badgeColor;
+  final Color buttonColor, buttonTextColor;
+  final String title, subtitle, badge, buttonLabel;
+  final List<String> tags;
   final VoidCallback onTap;
 
-  const _HubCard({required this.index, required this.controller, required this.title, required this.subtitle, required this.icon, required this.color, required this.badge, required this.pills, required this.cta, required this.onTap});
+  const _HubCard({
+    required this.icon, required this.iconColor,
+    required this.borderColor, required this.title,
+    required this.subtitle, required this.tags,
+    required this.tagColor, required this.badge,
+    required this.badgeColor, required this.buttonLabel,
+    required this.buttonColor, required this.buttonTextColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_HubCard> createState() => _HubCardState();
+}
+
+class _HubCardState extends State<_HubCard> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final animation = CurvedAnimation(
-      parent: controller,
-      curve: Interval(0.1 + (index * 0.1), 0.6 + (index * 0.1), curve: Curves.easeOutCubic),
-    );
-
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) => Transform.translate(
-        offset: Offset(0, 30 * (1 - animation.value)),
-        child: Opacity(opacity: animation.value, child: child),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
         child: Container(
-          decoration: BoxDecoration(color: const Color(0xFF141414), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.15))),
           padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141414),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: widget.borderColor.withOpacity(0.4), width: 1.5),
+            boxShadow: [BoxShadow(
+              color: widget.borderColor.withOpacity(0.1),
+              blurRadius: 12, spreadRadius: 0)],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(width: 48, height: 48, decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: color, size: 24)),
-                  Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20)), child: Text(badge, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold))),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: widget.iconColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12)),
+                    child: Icon(widget.icon,
+                      color: widget.iconColor, size: 24),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.badgeColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Text(widget.badge,
+                      style: TextStyle(
+                        color: widget.badgeColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+                  ),
                 ],
               ),
+              const SizedBox(height: 14),
+              Text(widget.title,
+                style: const TextStyle(
+                  color: Colors.white, fontSize: 18,
+                  fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(widget.subtitle,
+                style: const TextStyle(
+                  color: Color(0xFF888888), fontSize: 13)),
+              const SizedBox(height: 14),
+              Wrap(spacing: 8, runSpacing: 6, children: widget.tags.map((tag) =>
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: widget.tagColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: widget.tagColor.withOpacity(0.3))),
+                  child: Text(tag,
+                    style: TextStyle(
+                      color: widget.tagColor, fontSize: 11)),
+                )
+              ).toList()),
               const SizedBox(height: 16),
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 13, height: 1.3)),
-              const SizedBox(height: 16),
-              Row(children: pills.map((p) => Container(margin: const EdgeInsets.only(right: 6), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12)), child: Text(p, style: const TextStyle(color: Colors.white54, fontSize: 11)))).toList()),
-              const SizedBox(height: 16),
-              Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12), decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)), child: Center(child: Text(cta, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)))),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.buttonColor,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+                  onPressed: widget.onTap,
+                  child: Text(widget.buttonLabel,
+                    style: TextStyle(
+                      color: widget.buttonTextColor,
+                      fontWeight: FontWeight.bold)),
+                ),
+              ),
             ],
           ),
         ),
@@ -239,11 +451,16 @@ class _HubCard extends StatelessWidget {
   }
 }
 
-class _StatPill extends StatelessWidget {
-  final String emoji, label;
-  const _StatPill({required this.emoji, required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), decoration: BoxDecoration(color: const Color(0xFF141414), border: Border.all(color: Colors.white.withOpacity(0.05)), borderRadius: BorderRadius.circular(30)), child: Row(children: [Text(emoji, style: const TextStyle(fontSize: 14)), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500))]));
-  }
+// Stat pill widget (top-level function)
+Widget _statPill(String text) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFF141414),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFF2A2A2A)),
+    ),
+    child: Text(text,
+      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+  );
 }
