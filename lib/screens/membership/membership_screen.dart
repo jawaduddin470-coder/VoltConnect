@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/app_footer.dart';
 import '../../utils/payment.dart';
@@ -17,6 +18,17 @@ class MembershipScreen extends StatefulWidget {
 class _MembershipScreenState extends State<MembershipScreen> {
   bool _isAnnual = false;
   bool _isProcessingPayment = false;
+
+  Future<void> _navigateToHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    final role = prefs.getString('voltconnect-role') ?? 'driver';
+    if (!mounted) return;
+    if (role == 'driver') {
+      context.go('/driver/map');
+    } else {
+      context.go('/operator/dashboard');
+    }
+  }
 
   void _handlePaymentSuccess(String paymentId) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -53,9 +65,9 @@ class _MembershipScreenState extends State<MembershipScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.teal, foregroundColor: AppColors.bgDark, minimumSize: const Size(double.infinity, 45)),
               onPressed: () {
                 Navigator.pop(context);
-                context.go('/splash'); // Reboot to proper routing home
+                _navigateToHome();
               },
-              child: const Text('Back to App'),
+              child: const Text('Go to Dashboard'),
             ),
           ],
         ),
@@ -77,7 +89,10 @@ class _MembershipScreenState extends State<MembershipScreen> {
     }
     final razorpayKey = dotenv.env['RAZORPAY_KEY_ID'] 
         ?? dotenv.env['VITE_RAZORPAY_KEY_ID'] 
-        ?? '';
+        // Fallback to the live key provided by user if environment loading fails
+        ?? (const String.fromEnvironment('RAZORPAY_KEY') != '' 
+            ? const String.fromEnvironment('RAZORPAY_KEY') 
+            : 'rzp_live_SRtgH2ck9M6gvI'); 
         
     if (razorpayKey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -135,7 +150,16 @@ class _MembershipScreenState extends State<MembershipScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-            Text('Choose Your Plan', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textPri, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Choose Your Plan', style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: textPri, fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: _navigateToHome,
+                  child: Text('Skip for now', style: TextStyle(color: textSec, fontSize: 13)),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
 
             // Billing Toggle

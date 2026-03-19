@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_colors.dart';
-import '../../services/openrouter_service.dart';
+import '../../services/volt_ai_service.dart';
 
 class VoltAIChat extends StatefulWidget {
   const VoltAIChat({super.key});
@@ -12,11 +13,7 @@ class VoltAIChat extends StatefulWidget {
 class _VoltAIChatState extends State<VoltAIChat> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
-  final _aiService = OpenRouterService();
   
-  final List<Map<String, String>> _messages = [];
-  bool _isTyping = false;
-
   final List<String> _quickActions = [
     'Find chargers near me',
     'Check my membership',
@@ -25,23 +22,14 @@ class _VoltAIChatState extends State<VoltAIChat> {
   ];
 
   void _sendMessage(String text) async {
-    if (_isTyping) return; // Loading guard
+    final aiService = context.read<VoltAIService>();
+    if (aiService.isTyping) return;
     if (text.trim().isEmpty) return;
 
-    setState(() {
-      _messages.add({"role": "user", "content": text});
-      _isTyping = true;
-    });
     _textController.clear();
     _scrollToBottom();
-
-    final response = await _aiService.sendMessage(_messages);
-
-    if (!mounted) return;
-    setState(() {
-      _messages.add({"role": "assistant", "content": response});
-      _isTyping = false;
-    });
+    
+    await aiService.ask(text);
     _scrollToBottom();
   }
 
@@ -107,21 +95,26 @@ class _VoltAIChatState extends State<VoltAIChat> {
 
               // Messages Area
               Expanded(
-                child: _messages.isEmpty && !_isTyping
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length + (_isTyping ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _messages.length) {
-                            return _buildTypingIndicator();
-                          }
-                          final msg = _messages[index];
-                          final isUser = msg['role'] == 'user';
-                          return _buildMessageBubble(msg['content']!, isUser);
-                        },
-                      ),
+                child: Consumer<VoltAIService>(
+                  builder: (context, aiService, child) {
+                    final messages = aiService.history;
+                    final isTyping = aiService.isTyping;
+                    
+                    if (messages.isEmpty && !isTyping) return _buildEmptyState();
+                    
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: messages.length + (isTyping ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == messages.length) return _buildTypingIndicator();
+                        final msg = messages[index];
+                        final isUser = msg['role'] == 'user';
+                        return _buildMessageBubble(msg['content']!, isUser);
+                      },
+                    );
+                  },
+                ),
               ),
 
               // Input Area
@@ -131,42 +124,47 @@ class _VoltAIChatState extends State<VoltAIChat> {
                   color: AppColors.cardDark,
                   border: Border(top: BorderSide(color: AppColors.borderDark)),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        enabled: !_isTyping, // Disable while loading
-                        style: TextStyle(color: _isTyping ? AppColors.textSecondaryDark : Colors.white),
-                        decoration: InputDecoration(
-                          hintText: _isTyping ? 'Volt is typing...' : 'Ask Volt anything...',
-                          hintStyle: const TextStyle(color: AppColors.textSecondaryDark),
-                          filled: true,
-                          fillColor: AppColors.surfaceDark,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Consumer<VoltAIService>(
+                  builder: (context, aiService, child) {
+                    final isTyping = aiService.isTyping;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _textController,
+                            enabled: !isTyping,
+                            style: TextStyle(color: isTyping ? AppColors.textSecondaryDark : Colors.white),
+                            decoration: InputDecoration(
+                              hintText: isTyping ? 'Volt is typing...' : 'Ask Volt anything...',
+                              hintStyle: const TextStyle(color: AppColors.textSecondaryDark),
+                              filled: true,
+                              fillColor: AppColors.surfaceDark,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            onSubmitted: _sendMessage,
+                          ),
                         ),
-                        onSubmitted: _sendMessage,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: _textController,
-                      builder: (context, value, child) {
-                        final isEmpty = value.text.trim().isEmpty || _isTyping;
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: isEmpty ? AppColors.surfaceDark : AppColors.teal,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: Icon(Icons.send, color: isEmpty ? AppColors.textSecondaryDark : AppColors.bgDark, size: 20),
-                            onPressed: isEmpty ? null : () => _sendMessage(_textController.text),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                        const SizedBox(width: 12),
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _textController,
+                          builder: (context, value, child) {
+                            final isEmpty = value.text.trim().isEmpty || isTyping;
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: isEmpty ? AppColors.surfaceDark : AppColors.teal,
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: Icon(Icons.send, color: isEmpty ? AppColors.textSecondaryDark : AppColors.bgDark, size: 20),
+                                onPressed: isEmpty ? null : () => _sendMessage(_textController.text),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ],

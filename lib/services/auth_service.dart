@@ -27,19 +27,27 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // For web, use signInWithPopup
-      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      googleProvider.addScope('email');
-      googleProvider.addScope('profile');
+      if (kIsWeb) {
+        // For web, use signInWithPopup
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        return await _auth.signInWithPopup(googleProvider);
+      } else {
+        // For mobile/native platforms
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null; // Cancelled
 
-      // This opens a popup on web browsers
-      final UserCredential credential =
-          await _auth.signInWithPopup(googleProvider);
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
 
-      return credential;
+        return await _auth.signInWithCredential(credential);
+      }
     } catch (e) {
-      // If popup is blocked, fall back to redirect
-      if (e.toString().contains('popup-blocked')) {
+      if (kIsWeb && e.toString().contains('popup-blocked')) {
         await _auth.signInWithRedirect(GoogleAuthProvider());
         return await _auth.getRedirectResult();
       }

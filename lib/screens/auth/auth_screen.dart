@@ -102,7 +102,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           _signUpPasswordController.text.trim(),
           _userRole,
         );
-        _navigateToDashboard();
+        // Startup Logic: Divert new signups to Membership selection
+        if (mounted) context.go('/membership');
       } catch (e) {
         debugPrint('Signup error: $e'); // Log trace explicitly as requested
         _showError(_getErrorMessage(e.toString()));
@@ -114,7 +115,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final authProvider = context.read<AuthProvider>();
     try {
       await authProvider.signInWithGoogle(_userRole);
-      _navigateToDashboard();
+      // For Google, if its a "new" account sync happened in provider.
+      // We'll treat Google as onboarding too for consistency.
+      if (mounted) context.go('/membership');
     } catch (e) {
       _showError(_getErrorMessage(e.toString()));
     }

@@ -98,20 +98,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        final role = doc.data()?['role'] as String?;
-
-        if (role == 'driver') {
-          if (mounted) context.go('/driver/map');
-        } else if (role == 'operator') {
-          if (mounted) context.go('/operator/dashboard');
-        } else {
-          if (mounted) context.go('/role-selection');
-        }
-      } catch (e) {
-        if (mounted) context.go('/role-selection');
-      }
+      if (mounted) context.go('/hub');
     } else {
       if (mounted) context.go('/role-selection');
     }

@@ -6,7 +6,8 @@ import 'dart:ui'; // Fix: PlatformDispatcher
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'services/auth_provider.dart';
-import 'widgets/startup_guard.dart'; // [NEW] Phase 8
+import 'services/volt_ai_service.dart';
+import 'widgets/startup_guard.dart';
 
 // ─── ThemeProvider ──────────────────────────────────────────────────────────
 class ThemeProvider extends ChangeNotifier {
@@ -83,6 +84,7 @@ void main() {
           // AuthProvider and ThemeProvider can be created after boot.
           ChangeNotifierProvider(create: (_) => ThemeProvider(true)),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => VoltAIService()),
         ],
         child: const VoltConnectApp(),
       ),

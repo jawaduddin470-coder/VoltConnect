@@ -20,6 +20,7 @@ import '../screens/community/community_screen.dart';
 
 import '../screens/driver/profile/driver_profile_screen.dart';
 import '../screens/operator/profile/operator_profile_screen.dart';
+import '../screens/hub/hub_screen.dart';
 
 Page<dynamic> _fade(Widget child, GoRouterState state) {
   return CustomTransitionPage<void>(
@@ -40,15 +41,27 @@ final goRouter = GoRouter(
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
     final isLoggedIn = user != null;
+    final isGoingToRoot = state.uri.path == '/';
+    final isGoingToAuth = state.uri.path == '/auth';
+    final isGoingToSplash = state.uri.path == '/splash';
     final isGoingToDriver = state.uri.path.startsWith('/driver');
     final isGoingToOperator = state.uri.path.startsWith('/operator');
-    if (!isLoggedIn && (isGoingToDriver || isGoingToOperator)) {
+
+    if (!isLoggedIn && (isGoingToDriver || isGoingToOperator || isGoingToRoot)) {
+      if (isGoingToSplash) return null;
       return '/auth';
     }
+
+    if (isLoggedIn && (isGoingToAuth || isGoingToRoot)) {
+      return '/hub';
+    }
+    
     return null;
   },
   routes: [
+    GoRoute(path: '/', redirect: (_, __) => '/splash'),
     GoRoute(path: '/splash', pageBuilder: (context, state) => _fade(const SplashScreen(), state)),
+    GoRoute(path: '/hub', pageBuilder: (context, state) => _fade(const HubScreen(), state)),
     GoRoute(path: '/role-selection', pageBuilder: (context, state) => _fade(const RoleSelectionScreen(), state)),
     GoRoute(path: '/auth', pageBuilder: (context, state) => _fade(const AuthScreen(), state)),
 

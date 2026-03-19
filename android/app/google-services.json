@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "519731202341",
+    "project_id": "voltconnect-30c9b",
+    "storage_bucket": "voltconnect-30c9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:519731202341:android:a05f35d3c4c0295dc7b2cc",
+        "android_client_info": {
+          "package_name": "com.voltconnect.voltconnect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "519731202341-eish6l4efb97a9lsn5pahtk1v50ctumj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_oHkIsRUMMYFgFRP2RVXDnGCIVWTmb0E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "519731202341-eish6l4efb97a9lsn5pahtk1v50ctumj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

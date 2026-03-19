@@ -53,6 +53,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const ThemeToggle(),
                       const SizedBox(width: 8),
                       GestureDetector(
+                        onTap: () => context.go('/hub'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.white70),
+                              SizedBox(width: 6),
+                              Text('Hub', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
                         onTap: () => context.go('/operator/add-station'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
