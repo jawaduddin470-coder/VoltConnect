@@ -1,4 +1,7 @@
 #!/bin/bash
+# 1. Skip Build (Using pre-compiled build/web from GitHub)
+echo "Using pre-compiled build/web assets from GitHub repository."
+exit 0
 set -ex
 
 # 1. Clean entirely to remove old cached master-branch flutter

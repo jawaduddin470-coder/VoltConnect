@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:js' as js;
-import 'dart:js_util' as js_util;
 
 /// Initiates a payment process on Flutter Web using the dynamically injected
 /// Razorpay checkout.js script to avoid native compilation issues.
@@ -27,13 +26,9 @@ Future<void> initiatePayment({
     };
 
     js.context.callMethod('openRazorpay', [
-      js_util.jsify(optionsMap),
-      js_util.allowInterop((paymentId) {
-        onSuccess(paymentId);
-      }),
-      js_util.allowInterop((errorMessage) {
-        onError(errorMessage);
-      }),
+      js.JsObject.jsify(optionsMap),
+      (paymentId) => onSuccess(paymentId),
+      (errorMessage) => onError(errorMessage),
     ]);
   } catch (e) {
     js.context['console'].callMethod('error', ['VoltConnect: initiatePayment exception', e.toString()]);

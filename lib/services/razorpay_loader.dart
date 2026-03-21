@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:html' as html;
-import 'dart:js_util' as js_util;
+import 'dart:js' as js;
 import 'package:flutter/foundation.dart';
 
 class RazorpayLoader {
@@ -17,7 +17,7 @@ class RazorpayLoader {
     // We use a try-catch for the import/usage of js_util to be safe 
     // across different analyzer configurations.
     try {
-      if (js_util.hasProperty(html.window, 'Razorpay')) {
+      if (js.context.hasProperty('Razorpay')) {
         _isLoaded = true;
         return true;
       }
