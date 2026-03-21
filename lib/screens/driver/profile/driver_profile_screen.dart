@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,11 +48,15 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     if (pickedFile == null) return;
 
     setState(() => _isLoading = true);
-
     try {
-      final file = File(pickedFile.path);
+      final bytes = await pickedFile.readAsBytes();
       final ref = _storage.ref().child('users/${user.uid}/profile.jpg');
-      await ref.putFile(file);
+      
+      await ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      
       final url = await ref.getDownloadURL();
 
       await user.updatePhotoURL(url);
