@@ -47,7 +47,15 @@
     window.openRazorpay = function(options, successCallback, failureCallback) {
       console.log("VoltConnect JS: Received request to open Razorpay", options);
       try {
-        var rzpOptions = JSON.parse(JSON.stringify(options)); // Ensure it's a plain card
+        if (typeof Razorpay === 'undefined') {
+          console.error("VoltConnect JS: Razorpay SDK not found in window");
+          failureCallback("Razorpay SDK not loaded. Please check your internet connection.");
+          return;
+        }
+
+        var rzpOptions = JSON.parse(JSON.stringify(options)); 
+        console.log("VoltConnect JS: Cleaned options", rzpOptions);
+
         rzpOptions.handler = function(response) {
           console.log("VoltConnect JS: Payment Success", response);
           successCallback(response.razorpay_payment_id);
@@ -56,15 +64,17 @@
         var rzp = new Razorpay(rzpOptions);
         
         rzp.on('payment.failed', function(response) {
-          console.error("VoltConnect JS: Payment Failed", response);
-          failureCallback(response.error.description || "Payment Failed");
+          console.error("VoltConnect JS: Payment Failed Response", response);
+          var desc = "Payment Failed";
+          if (response.error) desc = response.error.description || response.error.reason || desc;
+          failureCallback(desc);
         });
         
-        console.log("VoltConnect JS: Triggering rzp.open()");
+        console.log("VoltConnect JS: Calling rzp.open()");
         rzp.open();
       } catch (e) {
-        console.error("VoltConnect JS: Exception", e);
-        failureCallback(e.toString());
+        console.error("VoltConnect JS: Critical Exception", e);
+        failureCallback("JS Error: " + e.message);
       }
     };
   </script>

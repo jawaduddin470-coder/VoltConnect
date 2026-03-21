@@ -25,6 +25,8 @@ Future<void> initiatePayment({
       'theme': {'color': '#00D4AA'},
     };
 
+    js.context['console'].callMethod('log', ['VoltConnect Dart: Options jsified', js.JsObject.jsify(optionsMap)]);
+
     js.context.callMethod('openRazorpay', [
       js.JsObject.jsify(optionsMap),
       (paymentId) => onSuccess(paymentId),
