@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:js' as js;
+import 'package:flutter/foundation.dart';
 
 /// Initiates a payment process on Flutter Web using the dynamically injected
 /// Razorpay checkout.js script to avoid native compilation issues.
@@ -13,7 +14,8 @@ Future<void> initiatePayment({
   required Function(String errorMessage) onError,
 }) async {
   try {
-    js.context['console'].callMethod('log', ['VoltConnect: Calling JS helper openRazorpay...', amount, planName]);
+    debugPrint('VoltConnect: Calling JS helper openRazorpay... $amount, $planName');
+    html.window.console.log('VoltConnect Dart: Starting payment for $planName');
 
     final Map<String, dynamic> optionsMap = {
       'key': razorpayKey,
@@ -25,17 +27,17 @@ Future<void> initiatePayment({
       'theme': {'color': '#00D4AA'},
     };
 
-    js.context['console'].callMethod('log', ['VoltConnect Dart: Options jsified', js.JsObject.jsify(optionsMap)]);
-
-    js.context['console'].callMethod('log', ['VoltConnect Dart: Options jsified', js.JsObject.jsify(optionsMap)]);
+    final jsOptions = js.JsObject.jsify(optionsMap);
+    html.window.console.log('VoltConnect Dart: Options jsified');
 
     js.context.callMethod('openRazorpay', [
-      js.JsObject.jsify(optionsMap),
-      (paymentId) => onSuccess(paymentId),
-      (errorMessage) => onError(errorMessage),
+      jsOptions,
+      js.allowInterop((paymentId) => onSuccess(paymentId)),
+      js.allowInterop((errorMessage) => onError(errorMessage)),
     ]);
   } catch (e) {
-    js.context['console'].callMethod('error', ['VoltConnect: initiatePayment exception', e.toString()]);
+    debugPrint('VoltConnect: initiatePayment exception: $e');
+    html.window.console.error('VoltConnect Dart Error: $e');
     onError('Error launching payment popup: $e');
   }
 }

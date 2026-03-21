@@ -44,7 +44,13 @@
   -->
   <script src="flutter_bootstrap.js" async></script>
   <script>
-    console.log("VoltConnect: Deployment Version 4 ACTIVE (Log Diagnostics Enabled)");
+    console.log("VoltConnect: Deployment Version 5 ACTIVE (Enhanced Interop)");
+    
+    // Global Debug Listener
+    window.addEventListener('click', function(e) {
+      console.log("VoltConnect JS: Global Click detected on", e.target.tagName, e.target.innerText || "");
+    }, true);
+
     window.openRazorpay = function(options, successCallback, failureCallback) {
       console.log("VoltConnect JS: Received request to open Razorpay", options);
       try {
