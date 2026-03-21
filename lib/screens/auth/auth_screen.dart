@@ -102,8 +102,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           _signUpPasswordController.text.trim(),
           _userRole,
         );
-        // Route new signups to Hub — they can access membership from there
-        if (mounted) context.go('/hub');
+        // Route new signups to their respective dashboards
+        _navigateToDashboard();
       } catch (e) {
         debugPrint('Signup error: $e'); // Log trace explicitly as requested
         _showError(_getErrorMessage(e.toString()));
@@ -115,16 +115,19 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final authProvider = context.read<AuthProvider>();
     try {
       await authProvider.signInWithGoogle(_userRole);
-      // Route Google sign-in users to Hub
-      if (mounted) context.go('/hub');
+      // Route Google sign-in users to their respective dashboards
+      _navigateToDashboard();
     } catch (e) {
       _showError(_getErrorMessage(e.toString()));
     }
   }
 
   void _navigateToDashboard() {
-    // Always go to Hub after sign-in — user chooses their surface from there
-    context.go('/hub');
+    if (_userRole == 'operator') {
+      context.go('/operator/dashboard');
+    } else {
+      context.go('/driver/map');
+    }
   }
 
   String _getErrorMessage(String error) {

@@ -53,7 +53,8 @@ final goRouter = GoRouter(
     }
 
     if (isLoggedIn && (isGoingToAuth || isGoingToRoot)) {
-      return '/hub';
+      // Let splash handle the async role evaluation
+      return '/splash';
     }
     
     return null;

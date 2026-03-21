@@ -324,9 +324,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         Padding(
           padding: const EdgeInsets.only(right: 8),
           child: TextButton.icon(
-            onPressed: () => context.go('/hub'),
+            onPressed: () => context.go('/role-selection'),
             icon: const Icon(Icons.bolt, size: 16, color: AppColors.teal),
-            label: const Text('Hub', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.bold, fontSize: 13)),
+            label: const Text('Roles', style: TextStyle(color: AppColors.teal, fontWeight: FontWeight.bold, fontSize: 13)),
             style: TextButton.styleFrom(
               backgroundColor: AppColors.teal.withOpacity(0.1),
               padding: const EdgeInsets.symmetric(horizontal: 12),

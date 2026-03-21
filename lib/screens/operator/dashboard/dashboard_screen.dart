@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const ThemeToggle(),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: () => context.go('/hub'),
+                        onTap: () => context.go('/role-selection'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           margin: const EdgeInsets.only(right: 8),
@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Icon(Icons.arrow_back_ios_new, size: 14, color: Colors.white70),
                               SizedBox(width: 6),
-                              Text('Hub', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                              Text('Roles', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
                             ],
                           ),
                         ),
