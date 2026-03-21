@@ -27,7 +27,7 @@ Future<void> initiatePayment({
     };
 
     js.context.callMethod('openRazorpay', [
-      js.JsObject.jsify(optionsMap),
+      js_util.jsify(optionsMap),
       js_util.allowInterop((paymentId) {
         onSuccess(paymentId);
       }),
