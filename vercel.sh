@@ -36,5 +36,6 @@ echo "OCMAP_API_KEY=$OCMAP_API_KEY" >> .env
 # We do not append the Admin Backend keys (FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) 
 # as they belong purely to the node backend/functions, keeping the web client safe.
 
-# 5. Build Web
+# 5. Build Web (Enforcing strict Memory limit to prevent Vercel 1024MB container from killing dart2js)
+export DART_VM_OPTIONS="--old_gen_heap_size=800"
 flutter build web --release
