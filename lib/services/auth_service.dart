@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   FirebaseAuth get _auth => FirebaseAuth.instance;
   FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -34,17 +33,8 @@ class AuthService {
         googleProvider.addScope('profile');
         return await _auth.signInWithPopup(googleProvider);
       } else {
-        // For mobile/native platforms
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-        if (googleUser == null) return null; // Cancelled
-
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-
-        return await _auth.signInWithCredential(credential);
+        // Native GoogleSignIn currently disabled for web build stabilization
+        throw UnimplementedError('Native Google SignIn not supported on this platform');
       }
     } catch (e) {
       if (kIsWeb && e.toString().contains('popup-blocked')) {
@@ -63,7 +53,6 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
-    await _googleSignIn.signOut();
   }
 
   // Sync user data to Firestore
@@ -86,7 +75,6 @@ class AuthService {
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("Firestore write failed (syncUserData): $e");
-      // Don't rethrow, allow login to proceed
     }
   }
 
