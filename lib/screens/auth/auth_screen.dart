@@ -122,11 +122,18 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     }
   }
 
-  void _navigateToDashboard() {
-    if (_userRole == 'operator') {
-      context.go('/operator/dashboard');
-    } else {
-      context.go('/driver/map');
+  void _navigateToDashboard() async {
+    final prefs = await SharedPreferences.getInstance();
+    final plan = prefs.getString('selectedPlan');
+    
+    if (mounted) {
+      if (plan != null && plan != 'free' && plan != 'operator-basic') {
+        context.go('/membership');
+      } else if (_userRole == 'operator') {
+        context.go('/operator/dashboard');
+      } else {
+        context.go('/driver/map');
+      }
     }
   }
 

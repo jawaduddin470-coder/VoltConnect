@@ -28,8 +28,8 @@ Future<void> initiatePayment({
 
     js.context.callMethod('openRazorpay', [
       jsOptions,
-      (paymentId) => onSuccess(paymentId),
-      (errorMessage) => onError(errorMessage),
+      js.allowInterop((paymentId) => onSuccess(paymentId)),
+      js.allowInterop((errorMessage) => onError(errorMessage)),
     ]);
   } catch (e) {
     debugPrint('VoltConnect: initiatePayment exception: $e');
