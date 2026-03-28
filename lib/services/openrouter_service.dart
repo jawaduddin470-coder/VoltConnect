@@ -20,8 +20,7 @@ class OpenRouterService {
 
   Future<String> sendMessage(List<Map<String, String>> history) async {
     final apiKey = dotenv.env['OPENROUTER_API_KEY'] ??
-        dotenv.env['VITE_OPENROUTER_API_KEY'] ?? 
-        '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';
+        dotenv.env['VITE_OPENROUTER_API_KEY'] ?? '';
 
     if (apiKey.isEmpty || apiKey == 'your_key_here') {
       return 'Volt AI is not configured. Please add your OpenRouter API key to the .env file.';
@@ -57,32 +56,6 @@ class OpenRouterService {
           final content = data['choices']?[0]?['message']?['content'];
           if (content != null && (content as String).isNotEmpty) return content;
         } else if (response.statusCode == 401) {
-          // Self-healing: If the .env key failed with 401, try the fallback hardcoded key
-          final fallbackKey = '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';
-          if (apiKey != fallbackKey) {
-             debugPrint("VoltConnect: Primary API key failed (401). Retrying with secondary fallback...");
-             final retryResponse = await http.post(
-                Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
-                headers: {
-                  'Authorization': 'Bearer $fallbackKey',
-                  'Content-Type': 'application/json',
-                  'HTTP-Referer': 'https://voltconnect.app',
-                  'X-Title': 'VoltConnect',
-                },
-                body: jsonEncode({
-                  'model': model,
-                  'messages': messages,
-                  'max_tokens': 300,
-                  'temperature': 0.7,
-                }),
-              ).timeout(const Duration(seconds: 30));
-              
-              if (retryResponse.statusCode == 200) {
-                final data = jsonDecode(retryResponse.body);
-                final content = data['choices']?[0]?['message']?['content'];
-                if (content != null && (content as String).isNotEmpty) return content;
-              }
-          }
           
           // Self-healing: Provide a realistic fallback mock so the AI still "works" for users
           // This avoids completely breaking the user experience if the provided key is invalid

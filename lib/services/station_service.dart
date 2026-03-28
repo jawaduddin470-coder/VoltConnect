@@ -26,7 +26,7 @@ class StationService {
     required double north,
     required double west,
     required double east,
-    int limit = 500,
+    int limit = 2000,
   }) async {
     try {
       final snapshot = await _db
@@ -81,11 +81,11 @@ class StationService {
 
   // Fetch stations near a location (simple query, client-side filter)
   static Future<List<StationModel>> fetchNearbyStations(
-    double lat, double lng, {double radiusKm = 25}
+    double lat, double lng, {double radiusKm = 50}
   ) async {
     try {
       final snapshot = await _db.collection('stations')
-          .limit(200)
+          .limit(2000)
           .get();
 
       print('Total stations fetched: ${snapshot.docs.length}');

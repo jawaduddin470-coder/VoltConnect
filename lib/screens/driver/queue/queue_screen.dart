@@ -21,11 +21,15 @@ class _QueueScreenState extends State<QueueScreen> {
   List<QueuedStation> _stations = [];
   ActiveQueue? _activeQueue;
   bool _isLoading = true;
-  String? _joiningStationId; // station id currently being joined
+  String? _joiningStationId;
   String _activeFilter = 'All';
   Set<String> _expandedIds = {};
   bool _showHistory = false;
   Timer? _refreshTimer;
+  
+  // ── Search ────────────────────────────────────────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   final _filters = ['All', 'No Wait', 'Fast Charger', 'Available'];
 
@@ -40,6 +44,7 @@ class _QueueScreenState extends State<QueueScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -144,6 +149,14 @@ class _QueueScreenState extends State<QueueScreen> {
 
   List<QueuedStation> get _filteredStations {
     return _stations.where((qs) {
+      // Filter by search query
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        final nameMatch = qs.station.name.toLowerCase().contains(q);
+        final addressMatch = qs.station.address.toLowerCase().contains(q);
+        if (!nameMatch && !addressMatch) return false;
+      }
+      // Filter by chip
       switch (_activeFilter) {
         case 'No Wait':
           return qs.queueCount == 0;
@@ -205,6 +218,53 @@ class _QueueScreenState extends State<QueueScreen> {
                 onLeave: _leaveQueue,
               ),
               const SizedBox(height: 16),
+
+              // Search Bar
+              Container(
+                height: 46,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    Icon(Icons.search, size: 18,
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search by station name or city...',
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
+                        onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
+                      ),
+                    ),
+                    if (_searchQuery.isNotEmpty)
+                      IconButton(
+                        icon: Icon(Icons.close, size: 18,
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // Filter Chips
               SizedBox(

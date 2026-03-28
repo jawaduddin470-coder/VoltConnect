@@ -13,3 +13,5 @@ node_modules/
 
 # Do NOT ignore web/ folder
 # web/ is needed for Vercel Flutter web deploy
+.vercel
+.env*.local

@@ -33,6 +33,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   late Animation<double> _pulseAnim;
   LatLng _userLocation = const LatLng(17.3850, 78.4867);
   final int _bottomNavIndex = 0;
+  
+  // ── Search ────────────────────────────────────────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   // ── Viewport debounce ─────────────────────────────────────────────────────
   Timer? _viewportDebounce;
@@ -96,6 +100,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   void dispose() {
     _viewportDebounce?.cancel();
+    _searchController.dispose();
     _pulseController.dispose();
     super.dispose();
   }
@@ -397,6 +402,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 48,
       decoration: BoxDecoration(
@@ -409,13 +415,52 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           const SizedBox(width: 12),
           const Icon(Icons.search, color: AppColors.textSecondaryDark, size: 20),
           const SizedBox(width: 8),
-          const Expanded(
-            child: Text('Search stations, areas...', style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 14)),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: const InputDecoration(
+                hintText: 'Search stations, areas...',
+                hintStyle: TextStyle(color: AppColors.textSecondaryDark, fontSize: 14),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              onChanged: (val) {
+                setState(() => _searchQuery = val.trim().toLowerCase());
+              },
+              onSubmitted: (val) {
+                final query = val.trim().toLowerCase();
+                if (query.isEmpty) return;
+                // Find first matching station and fly there
+                final match = _stations.firstWhere(
+                  (s) => s.name.toLowerCase().contains(query) ||
+                         s.address.toLowerCase().contains(query),
+                  orElse: () => _stations.isNotEmpty ? _stations.first : throw StateError(''),
+                );
+                try {
+                  _mapController.move(LatLng(match.lat, match.lng), 14);
+                  setState(() => _selectedStation = match);
+                } catch (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No stations found for that search.')),
+                  );
+                }
+              },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.tune, color: AppColors.teal, size: 20),
-            onPressed: () {},
-          ),
+          if (_searchQuery.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.close, color: AppColors.textSecondaryDark, size: 18),
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.tune, color: AppColors.teal, size: 20),
+              onPressed: () {},
+            ),
         ],
       ),
     );
