@@ -81,7 +81,9 @@ class StationService {
       return stations;
     } catch (e) {
       print('[Viewport] fetchStationsInBounds error: $e');
-      return OCMapService.getDemoStations();
+      // If we got here, it's a real hard error (permissions, network, etc)
+      // We return empty so we don't pollute with 5 demo stations
+      return [];
     }
   }
   // ── end Phase 2 ────────────────────────────────────────────────────────────
@@ -146,8 +148,8 @@ class StationService {
 
       return stations;
     } catch (e) {
-      print('Failed to fetch nearby stations: $e');
-      return OCMapService.getDemoStations(); // Fallback to demo
+      print('[Nearby] Failed to fetch nearby stations: $e');
+      return [];
     }
   }
 

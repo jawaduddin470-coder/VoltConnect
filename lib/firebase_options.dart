@@ -37,30 +37,30 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static FirebaseOptions get web => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'] ?? '',
+  static FirebaseOptions get web => const FirebaseOptions(
+        apiKey: 'AIzaSyCAzSbzrxt-kA7YSWLg-qaaT8v8dix_NKE',
+        appId: '1:519731202341:web:b8df28c1231eed64c7b2cc',
+        messagingSenderId: '519731202341',
+        projectId: 'voltconnect-30c9b',
+        authDomain: 'voltconnect-30c9b.firebaseapp.com',
+        storageBucket: 'voltconnect-30c9b.firebasestorage.app',
+        measurementId: 'G-D6TJ7N9W3V',
       );
 
-  static FirebaseOptions get android => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
-        appId: dotenv.env['FIREBASE_ANDROID_APP_ID'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+  static FirebaseOptions get android => const FirebaseOptions(
+        apiKey: 'AIzaSyCAzSbzrxt-kA7YSWLg-qaaT8v8dix_NKE',
+        appId: '1:519731202341:android:a05f35d3c4c0295dc7b2cc',
+        messagingSenderId: '519731202341',
+        projectId: 'voltconnect-30c9b',
+        storageBucket: 'voltconnect-30c9b.firebasestorage.app',
       );
 
-  static FirebaseOptions get ios => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
-        appId: dotenv.env['FIREBASE_IOS_APP_ID'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+  static FirebaseOptions get ios => const FirebaseOptions(
+        apiKey: 'AIzaSyCAzSbzrxt-kA7YSWLg-qaaT8v8dix_NKE',
+        appId: '1:519731202341:ios:a05f35d3c4c0295dc7b2cc', // Note: Guessed from pattern, the .env had PLACEHOLDER
+        messagingSenderId: '519731202341',
+        projectId: 'voltconnect-30c9b',
+        storageBucket: 'voltconnect-30c9b.firebasestorage.app',
         iosBundleId: 'com.voltconnect',
       );
 }
