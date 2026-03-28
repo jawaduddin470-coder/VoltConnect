@@ -307,6 +307,12 @@ class _QueueScreenState extends State<QueueScreen> {
                     fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.bold,
                     color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                   )),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
+                    child: const Text('V.10 READY', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                  ),
                   const Spacer(),
                   if (!_isLoading)
                     Text('${filtered.length} results', style: TextStyle(

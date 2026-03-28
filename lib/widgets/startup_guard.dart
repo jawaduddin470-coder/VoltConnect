@@ -38,18 +38,14 @@ class _StartupGuardState extends State<StartupGuard> {
         onTimeout: () => throw Exception("Environment config (.env) load timed out"),
       );
 
-      // 3. Init Firebase safely
-      final apiKey = dotenv.env['FIREBASE_API_KEY'] ?? '';
-      if (apiKey.isEmpty || apiKey == 'REPLACE_WITH_YOUR_KEY') {
-        debugPrint("VoltConnect: Firebase API Key missing or placeholder. Skipping Firebase init.");
-      } else {
+      // 3. Init Firebase safely (Directly using hardcoded options, ignore .env requirement)
+      try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
-        ).timeout(
-          const Duration(seconds: 10),
-          onTimeout: () => throw Exception("Firebase initialization timed out"),
         );
         debugPrint("VoltConnect: Firebase ready.");
+      } catch (e) {
+        debugPrint("VoltConnect: Firebase already init or failed: $e");
       }
 
       // 4. Pre-load SharedPreferences

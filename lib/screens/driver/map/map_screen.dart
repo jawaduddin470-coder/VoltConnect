@@ -280,6 +280,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             child: _buildSearchBar(),
           ),
 
+          // Version Banner (Kill switch for cache)
+          Positioned(
+            top: 100,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(10), bottomLeft: Radius.circular(10)),
+              ),
+              child: const Text('V.10 READY', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          
           // Station count indicator
           if (!_isLoading && _stations.isNotEmpty)
             Positioned(

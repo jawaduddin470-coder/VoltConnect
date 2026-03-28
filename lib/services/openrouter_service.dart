@@ -19,11 +19,11 @@ class OpenRouterService {
       'asked for more detail.';
 
   Future<String> sendMessage(List<Map<String, String>> history) async {
-    final apiKey = dotenv.env['OPENROUTER_API_KEY'] ??
-        dotenv.env['VITE_OPENROUTER_API_KEY'] ?? '';
+    // Hardcoding for web deployment reliability as .env can be tricky in assets
+    const apiKey = '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';
 
     if (apiKey.isEmpty || apiKey == 'your_key_here') {
-      return 'Volt AI is not configured. Please add your OpenRouter API key to the .env file.';
+      return 'Volt AI is not configured accurately.';
     }
 
     final messages = [
