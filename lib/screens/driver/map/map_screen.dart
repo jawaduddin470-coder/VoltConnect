@@ -58,13 +58,26 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     final pos = await LocationService.getCurrentPosition();
     if (pos != null && mounted) {
       setState(() => _userLocation = LatLng(pos.latitude, pos.longitude));
-      _mapController.move(_userLocation, 11);
+      _mapController.move(_userLocation, 5); // Zoom out to show all India
     }
 
-    // Step 2: Load stations for initial viewport
-    await _fetchForCurrentBounds();
+    // Step 2: Fetch ALL stations globally (up to 2000) so we always see stations
+    // even if the viewport has none (e.g. Hyderabad when data is in Bangalore)
+    if (mounted) setState(() => _isLoading = true);
+    final allStations = await StationService.fetchNearbyStations(
+      _userLocation.latitude,
+      _userLocation.longitude,
+    );
+    
+    if (mounted) {
+      setState(() {
+        _stations = allStations;
+        _isLoading = false;
+      });
+      debugPrint('[Map] Initial global fetch: ${allStations.length} stations loaded');
+    }
 
-    // Step 3: Enable live viewport fetching after initial load
+    // Step 3: Enable live viewport fetching on pan/zoom
     if (mounted) setState(() => _viewportLoadEnabled = true);
   }
 
@@ -79,21 +92,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Future<void> _fetchForCurrentBounds() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
 
     final bounds = _mapController.camera.visibleBounds;
-    final stations = await StationService.fetchStationsInBounds(
+    final viewportStations = await StationService.fetchStationsInBounds(
       south: bounds.southWest.latitude,
       north: bounds.northEast.latitude,
       west: bounds.southWest.longitude,
       east: bounds.northEast.longitude,
     );
 
-    if (mounted) {
-      setState(() {
-        _stations = stations;
-        _isLoading = false;
-      });
+    if (mounted && viewportStations.isNotEmpty) {
+      // Merge viewport results into existing station set keyed by id
+      final merged = {for (final s in _stations) s.id: s};
+      for (final s in viewportStations) {
+        merged[s.id] = s;
+      }
+      setState(() => _stations = merged.values.toList());
+      debugPrint('[Map] Viewport fetch added ${viewportStations.length} stations. Total: ${_stations.length}');
     }
   }
 
