@@ -41,8 +41,11 @@ class StationService {
       final List<StationModel> stations = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final sLat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
-        final sLng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+        final rawLat = data['latitude'];
+        final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
+        
+        final rawLng = data['longitude'];
+        final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
 
         // Client-side longitude filter
         if (sLat == 0.0 || sLng == 0.0) continue;
@@ -50,13 +53,17 @@ class StationService {
 
         final connectorsRaw = data['connectors'] as List? ?? [];
         final connectors = connectorsRaw.map((e) => e.toString()).toList();
-        final numChargers = (data['num_chargers'] as num?)?.toInt() ?? 1;
-        final power = (data['power_kw'] as num?)?.toDouble() ?? 0.0;
+        
+        final rawNum = data['num_chargers'];
+        final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
+        
+        final rawPower = data['power_kw'];
+        final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
 
         stations.add(StationModel(
-          id: data['station_id'] ?? doc.id,
-          name: data['name'] ?? 'Unknown Station',
-          address: data['address'] ?? '',
+          id: data['station_id']?.toString() ?? doc.id,
+          name: data['name']?.toString() ?? 'Unknown Station',
+          address: data['address']?.toString() ?? '',
           lat: sLat,
           lng: sLng,
           connectors: connectors,
@@ -93,19 +100,25 @@ class StationService {
       final List<StationModel> stations = [];
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final sLat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
-        final sLng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+        final rawLat = data['latitude'];
+        final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
+        final rawLng = data['longitude'];
+        final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
         
         if (sLat != 0.0 && sLng != 0.0) {
           final connectorsRaw = data['connectors'] as List? ?? [];
           final connectors = connectorsRaw.map((e) => e.toString()).toList();
-          final numChargers = (data['num_chargers'] as num?)?.toInt() ?? 1;
-          final power = (data['power_kw'] as num?)?.toDouble() ?? 0.0;
+          
+          final rawNum = data['num_chargers'];
+          final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
+          
+          final rawPower = data['power_kw'];
+          final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
 
           stations.add(StationModel(
-            id: data['station_id'] ?? doc.id,
-            name: data['name'] ?? 'Unknown Station',
-            address: data['address'] ?? '',
+            id: data['station_id']?.toString() ?? doc.id,
+            name: data['name']?.toString() ?? 'Unknown Station',
+            address: data['address']?.toString() ?? '',
             lat: sLat,
             lng: sLng,
             connectors: connectors,

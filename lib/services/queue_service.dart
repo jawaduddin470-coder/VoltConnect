@@ -75,7 +75,7 @@ class QueueService {
   static Future<List<QueuedStation>> getNearestQueuedStations(
     double userLat,
     double userLng, {
-    int count = 10,
+    int count = 2000,
   }) async {
     try {
       // Fetch a large pool from Firestore
