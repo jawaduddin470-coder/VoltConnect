@@ -1,7 +1,7 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ocmap_service.dart'; // Reusing StationModel
-
 class StationService {
   static FirebaseFirestore get _db => FirebaseFirestore.instance;
 
@@ -40,41 +40,47 @@ class StationService {
 
       final List<StationModel> stations = [];
       for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final rawLat = data['latitude'];
-        final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
-        
-        final rawLng = data['longitude'];
-        final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
+        try {
+          final data = doc.data();
+          final rawLat = data['latitude'];
+          final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
+          
+          final rawLng = data['longitude'];
+          final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
 
-        // Client-side longitude filter
-        if (sLat == 0.0 || sLng == 0.0) continue;
-        if (sLng < west || sLng > east) continue;
+          // Client-side longitude filter
+          if (sLat == 0.0 || sLng == 0.0) continue;
+          if (sLng < west || sLng > east) continue;
 
-        final connectorsRaw = data['connectors'] as List? ?? [];
-        final connectors = connectorsRaw.map((e) => e.toString()).toList();
-        
-        final rawNum = data['num_chargers'];
-        final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
-        
-        final rawPower = data['power_kw'];
-        final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
+          final connRaw = data['connectors'];
+          final List<String> connectors = (connRaw is List) 
+              ? connRaw.map((e) => e.toString()).toList() 
+              : (connRaw != null ? [connRaw.toString()] : []);
+          
+          final rawNum = data['num_chargers'];
+          final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
+          
+          final rawPower = data['power_kw'];
+          final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
 
-        stations.add(StationModel(
-          id: data['station_id']?.toString() ?? doc.id,
-          name: data['name']?.toString() ?? 'Unknown Station',
-          address: data['address']?.toString() ?? '',
-          lat: sLat,
-          lng: sLng,
-          connectors: connectors,
-          availability: numChargers > 0 ? 'available' : 'unknown',
-          powerLevel: '${power.toStringAsFixed(0)}kW',
-          power: power,
-          price: '₹18/kWh',
-          amenities: [],
-          numChargers: numChargers,
-          queueCount: 0,
-        ));
+          stations.add(StationModel(
+            id: data['station_id']?.toString() ?? doc.id,
+            name: data['name']?.toString() ?? 'Unknown Station',
+            address: data['address']?.toString() ?? '',
+            lat: sLat,
+            lng: sLng,
+            connectors: connectors,
+            availability: numChargers > 0 ? 'available' : 'unknown',
+            powerLevel: '${power.toStringAsFixed(0)}kW',
+            power: power,
+            price: '₹18/kWh',
+            amenities: [],
+            numChargers: numChargers,
+            queueCount: 0,
+          ));
+        } catch (e) {
+          debugPrint('[Viewport] Error parsing station doc ${doc.id}: $e');
+        }
       }
 
       print('[Viewport] Valid stations in view: ${stations.length}');
@@ -101,37 +107,43 @@ class StationService {
 
       final List<StationModel> stations = [];
       for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final rawLat = data['latitude'];
-        final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
-        final rawLng = data['longitude'];
-        final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
-        
-        if (sLat != 0.0 && sLng != 0.0) {
-          final connectorsRaw = data['connectors'] as List? ?? [];
-          final connectors = connectorsRaw.map((e) => e.toString()).toList();
+        try {
+          final data = doc.data();
+          final rawLat = data['latitude'];
+          final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
+          final rawLng = data['longitude'];
+          final sLng = rawLng is num ? rawLng.toDouble() : double.tryParse(rawLng?.toString() ?? '') ?? 0.0;
           
-          final rawNum = data['num_chargers'];
-          final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
-          
-          final rawPower = data['power_kw'];
-          final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
+          if (sLat != 0.0 && sLng != 0.0) {
+            final connRaw = data['connectors'];
+            final List<String> connectors = (connRaw is List) 
+                ? connRaw.map((e) => e.toString()).toList() 
+                : (connRaw != null ? [connRaw.toString()] : []);
+            
+            final rawNum = data['num_chargers'];
+            final numChargers = rawNum is num ? rawNum.toInt() : int.tryParse(rawNum?.toString() ?? '') ?? 1;
+            
+            final rawPower = data['power_kw'];
+            final power = rawPower is num ? rawPower.toDouble() : double.tryParse(rawPower?.toString() ?? '') ?? 0.0;
 
-          stations.add(StationModel(
-            id: data['station_id']?.toString() ?? doc.id,
-            name: data['name']?.toString() ?? 'Unknown Station',
-            address: data['address']?.toString() ?? '',
-            lat: sLat,
-            lng: sLng,
-            connectors: connectors,
-            availability: numChargers > 0 ? 'available' : 'unknown',
-            powerLevel: '${power.toStringAsFixed(0)}kW',
-            power: power,
-            price: '₹18/kWh',
-            amenities: [],
-            numChargers: numChargers,
-            queueCount: 0,
-          ));
+            stations.add(StationModel(
+              id: data['station_id']?.toString() ?? doc.id,
+              name: data['name']?.toString() ?? 'Unknown Station',
+              address: data['address']?.toString() ?? '',
+              lat: sLat,
+              lng: sLng,
+              connectors: connectors,
+              availability: numChargers > 0 ? 'available' : 'unknown',
+              powerLevel: '${power.toStringAsFixed(0)}kW',
+              power: power,
+              price: '₹18/kWh',
+              amenities: [],
+              numChargers: numChargers,
+              queueCount: 0,
+            ));
+          }
+        } catch (e) {
+          debugPrint('[Nearby] Error parsing station doc ${doc.id}: $e');
         }
       }
 
