@@ -169,49 +169,26 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 userAgentPackageName: 'com.voltconnect',
               ),
 
-              // ── Phase 3: Clustered station markers ─────────────────────────
-              MarkerClusterLayerWidget(
-                options: MarkerClusterLayerOptions(
-                  maxClusterRadius: 60,
-                  size: const Size(44, 44),
-                  // Performance options
-                  markers: _stations.map((s) {
-                    return Marker(
-                      point: LatLng(s.lat, s.lng),
-                      width: 36,
-                      height: 36,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedStation = s),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _markerColor(s),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.bolt, color: Colors.white, size: 18),
+              // ── Phase 3: Station markers ─────────────────────────
+              MarkerLayer(
+                markers: _stations.map((s) {
+                  return Marker(
+                    point: LatLng(s.lat, s.lng),
+                    width: 32,
+                    height: 32,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedStation = s),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _markerColor(s),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
+                        child: const Icon(Icons.bolt, color: Colors.white, size: 16),
                       ),
-                    );
-                  }).toList(),
-                  builder: (context, markers) {
-                    // Custom cluster bubble
-                    return Container(
-                      decoration: const BoxDecoration(
-                        color: AppColors.teal,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          markers.length > 99 ? '99+' : markers.length.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                }).toList(),
               ),
 
               // User location pulsing marker
