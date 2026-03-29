@@ -33,7 +33,7 @@ class StationService {
           .collection('stations')
           .where('latitude', isGreaterThanOrEqualTo: south)
           .where('latitude', isLessThanOrEqualTo: north)
-          .limit(limit > 150 ? 150 : limit)
+          .limit(limit)
           .get();
 
       print('[Viewport] Fetched ${snapshot.docs.length} docs for lat [$south,$north]');
@@ -101,7 +101,7 @@ class StationService {
   ) async {
     try {
       final snapshot = await _db.collection('stations')
-          .limit(100)
+          .limit(2000)
           .get();
 
       print('Total stations fetched: ${snapshot.docs.length}');

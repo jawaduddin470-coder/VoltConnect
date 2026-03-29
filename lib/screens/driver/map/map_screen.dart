@@ -66,45 +66,30 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
 
     if (!mounted) return;
-    setState(() => _viewportLoadEnabled = true);
+    setState(() => _isLoading = true);
     
-    // Explicitly fetch bounds now
-    await _fetchForCurrentBounds();
+    // Step 2: Fetch ALL stations globally (up to 2000 limit) once on init
+    final allStations = await StationService.fetchNearbyStations(
+      _userLocation.latitude,
+      _userLocation.longitude,
+    );
     
     if (mounted) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _stations = allStations;
+        _isLoading = false;
+      });
+      debugPrint('[Map] Initial global fetch: ${allStations.length} stations loaded');
     }
   }
 
-  /// Called by the map's onPositionChanged — debounced 400ms
+  /// Map panning no longer triggers active fetches, since KD-Tree handles 2000 markers instantly
   void _onMapPositionChanged(MapCamera camera, bool hasGesture) {
-    if (!_viewportLoadEnabled) return;
-    _viewportDebounce?.cancel();
-    _viewportDebounce = Timer(const Duration(milliseconds: 400), () {
-      _fetchForCurrentBounds();
-    });
+    // No-op for performance
   }
 
   Future<void> _fetchForCurrentBounds() async {
-    if (!mounted) return;
-
-    final bounds = _mapController.camera.visibleBounds;
-    final viewportStations = await StationService.fetchStationsInBounds(
-      south: bounds.southWest.latitude,
-      north: bounds.northEast.latitude,
-      west: bounds.southWest.longitude,
-      east: bounds.northEast.longitude,
-    );
-
-    if (mounted && viewportStations.isNotEmpty) {
-      // Merge viewport results into existing station set keyed by id
-      final merged = {for (final s in _stations) s.id: s};
-      for (final s in viewportStations) {
-        merged[s.id] = s;
-      }
-      setState(() => _stations = merged.values.toList());
-      debugPrint('[Map] Viewport fetch added ${viewportStations.length} stations. Total: ${_stations.length}');
-    }
+    // No-op for performance
   }
 
   @override
@@ -169,26 +154,56 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 userAgentPackageName: 'com.voltconnect',
               ),
 
-              // ── Phase 3: Station markers ─────────────────────────
-              MarkerLayer(
-                markers: _stations.map((s) {
-                  return Marker(
-                    point: LatLng(s.lat, s.lng),
-                    width: 32,
-                    height: 32,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedStation = s),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _markerColor(s),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+              // ── Phase 3: Clustered station markers ─────────────────────────
+              MarkerClusterLayerWidget(
+                options: MarkerClusterLayerOptions(
+                  maxClusterRadius: 60,
+                  size: const Size(44, 44),
+                  animationsOptions: const AnimationsOptions(
+                    zoom: Duration.zero,
+                    fitBound: Duration.zero,
+                    centerMarker: Duration.zero,
+                    spiderfy: Duration.zero,
+                  ),
+                  // Performance options
+                  markers: _stations.map((s) {
+                    return Marker(
+                      point: LatLng(s.lat, s.lng),
+                      width: 32,
+                      height: 32,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedStation = s),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _markerColor(s),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(Icons.bolt, color: Colors.white, size: 16),
                         ),
-                        child: const Icon(Icons.bolt, color: Colors.white, size: 16),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                  builder: (context, markers) {
+                    // Custom cluster bubble
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: AppColors.teal,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          markers.length > 99 ? '99+' : markers.length.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
 
               // User location pulsing marker
