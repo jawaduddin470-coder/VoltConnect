@@ -85,8 +85,9 @@ class StationService {
 
       print('[Viewport] Valid stations in view: ${stations.length}');
       return stations;
-    } catch (e) {
+    } catch (e, stack) {
       print('[Viewport] fetchStationsInBounds error: $e');
+      print(stack);
       // If we got here, it's a real hard error (permissions, network, etc)
       // We return empty so we don't pollute with 5 demo stations
       return [];
@@ -109,6 +110,9 @@ class StationService {
       for (var doc in snapshot.docs) {
         try {
           final data = doc.data();
+          if (stations.length < 2) {
+             print('DEBUG RAW DATA FOR ${doc.id}: $data');
+          }
           final rawLat = data['latitude'];
           final sLat = rawLat is num ? rawLat.toDouble() : double.tryParse(rawLat?.toString() ?? '') ?? 0.0;
           final rawLng = data['longitude'];
@@ -142,8 +146,11 @@ class StationService {
               queueCount: 0,
             ));
           }
-        } catch (e) {
+        } catch (e, stack) {
           debugPrint('[Nearby] Error parsing station doc ${doc.id}: $e');
+          if (stations.length < 2) {
+             debugPrint(stack.toString());
+          }
         }
       }
 
@@ -159,8 +166,10 @@ class StationService {
       }
 
       return stations;
-    } catch (e) {
+      return stations;
+    } catch (e, stack) {
       print('[Nearby] Failed to fetch nearby stations: $e');
+      print(stack);
       return [];
     }
   }

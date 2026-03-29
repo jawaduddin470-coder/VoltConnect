@@ -105,11 +105,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                             ),
                           ),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
-                          child: const Text('V.10 READY', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                        ),
+
                         const SizedBox(width: 8),
                         const ThemeToggle(),
                       ],

@@ -55,30 +55,25 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Future<void> _init() async {
     // Step 1: Get user location
-    final pos = await LocationService.getCurrentPosition();
-    if (pos != null && mounted) {
-      setState(() => _userLocation = LatLng(pos.latitude, pos.longitude));
-      _mapController.move(_userLocation, 5); // Zoom out to show all India
+    try {
+      final pos = await LocationService.getCurrentPosition();
+      if (pos != null && mounted) {
+        setState(() => _userLocation = LatLng(pos.latitude, pos.longitude));
+        _mapController.move(_userLocation, 5); // Zoom out to show all India
+      }
+    } catch (e) {
+      debugPrint('[Map] Location access failed: $e');
     }
 
-    // Step 2: Fetch ALL stations globally (up to 2000) so we always see stations
-    // even if the viewport has none (e.g. Hyderabad when data is in Bangalore)
-    if (mounted) setState(() => _isLoading = true);
-    final allStations = await StationService.fetchNearbyStations(
-      _userLocation.latitude,
-      _userLocation.longitude,
-    );
+    if (!mounted) return;
+    setState(() => _viewportLoadEnabled = true);
+    
+    // Explicitly fetch bounds now
+    await _fetchForCurrentBounds();
     
     if (mounted) {
-      setState(() {
-        _stations = allStations;
-        _isLoading = false;
-      });
-      debugPrint('[Map] Initial global fetch: ${allStations.length} stations loaded');
+      setState(() => _isLoading = false);
     }
-
-    // Step 3: Enable live viewport fetching on pan/zoom
-    if (mounted) setState(() => _viewportLoadEnabled = true);
   }
 
   /// Called by the map's onPositionChanged — debounced 400ms
@@ -156,7 +151,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: const LatLng(17.3850, 78.4867),
-              initialZoom: 11,
+              initialZoom: 5.0,
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all,
               ),
@@ -191,12 +186,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: _markerColor(s),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: _markerColor(s).withValues(alpha: 0.5),
-                                blurRadius: 8,
-                              )
-                            ],
                           ),
                           child: const Icon(Icons.bolt, color: Colors.white, size: 18),
                         ),
@@ -206,16 +195,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   builder: (context, markers) {
                     // Custom cluster bubble
                     return Container(
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.teal,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.teal.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            spreadRadius: 2,
-                          )
-                        ],
                       ),
                       child: Center(
                         child: Text(
@@ -280,20 +262,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             child: _buildSearchBar(),
           ),
 
-          // Version Banner (Kill switch for cache)
-          Positioned(
-            top: 100,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(10), bottomLeft: Radius.circular(10)),
-              ),
-              child: const Text('V.10 READY', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          
           // Station count indicator
           if (!_isLoading && _stations.isNotEmpty)
             Positioned(
